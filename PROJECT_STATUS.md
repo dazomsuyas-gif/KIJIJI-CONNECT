@@ -8,7 +8,7 @@ Last reviewed: 2026-10-28
 - Node.js v24.20.0 and npm 11.19.0 are available in the current Windows environment.
 - Package commands: `npm run dev`, `npm run build`, `npm run lint`, `npm test`, and `npm run preview`.
 - Styling uses CSS variables with Times New Roman typography; English/Kiswahili navigation and selected headings, persistent light/dark preference, accessible mobile navigation, reduced-motion support, and Vercel deep-link fallback are implemented.
-- Existing sections have direct paths, including `/marketplace`, `/travel`, `/learning`, `/payments`, and `/account`. Product details, cart/orders, seller/admin and legal/FAQ pages are future phases.
+- Direct paths are available for the main modules plus product/supplier details, cart, orders, seller/admin demo boundaries, assistant, articles, about, FAQ and legal templates.
 - Browser storage access for local application data now uses `src/services/storageRepository.ts`.
 - UI modules include marketplace, demo checkout, locally stored content/community, language practice, illustrative travel enquiries, and a local intent-matching assistant.
 - The Supabase JavaScript client and lazy browser-client scaffold are present. The Supabase package is code-split and dynamically loaded. The account screen includes email sign-up, sign-in, password recovery and update, and sign-out, wired to Supabase Auth when configuration is available.
@@ -16,9 +16,9 @@ Last reviewed: 2026-10-28
 
 ## Verified state
 
-- Latest production build and TypeScript check after cart/order work: passed with `npm run build`; the Supabase client remains split from the initial bundle.
+- Latest production build and TypeScript check after route-foundation work: passed with `npm run build`; the Supabase client remains split from the initial bundle and standalone pages are in a separate lazy chunk.
 - Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 33 tests passed across 5 files using Vitest and Testing Library.
+- Latest automated test run: 47 tests passed across 6 files using Vitest and Testing Library.
 - `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
 - Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
@@ -31,6 +31,7 @@ Last reviewed: 2026-10-28
 - All supplied contact destinations were present in the rendered page, including `https://wa.me/255768868546`, the three exact email addresses, and both Instagram profiles.
 - Router browser checks: direct `/marketplace` loads and survives refresh; route-specific page section and title render; navigation and browser back work; unknown paths show a 404 page; Kiswahili navigation/headings and dark-theme preference persist; mobile menu opens at 390px without horizontal overflow.
 - Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the local cart recalculates wholesale pricing at MOQ, persists across refresh, and creates only a `SIMULATED` order record after the clearly labelled sandbox step. The cart clears after the simulation. Hotel intent still transfers to travel. At 390px marketplace/cart views have no horizontal overflow. No browser console errors, page errors, or failed requests were observed during successful checks.
+- Current route-foundation browser checks: product details and supplier profiles show explicitly unverified sample data; quote handoff is a user-directed WhatsApp link, not an automated send. A real click added a product to the browser-local cart, and the header cart link displayed the item and indicative subtotal. The footer Orders link reached the honest empty demo-order view. Mobile navigation opened at 320px; unknown paths render the 404 page. Document scroll width matched the 320px viewport.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
 - The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
 - Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
@@ -51,13 +52,13 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 
 ## Current phased implementation
 
-- Phase 1 foundation: complete and pushed in `2030566`; routed shell for existing sections, route metadata/title/404 support, Vercel fallback, responsive mobile navigation, theme and language preferences, initial shared storage adapter, and automated tests.
-- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, preservation of browser-created listings, and a browser-persistent cart with clearly simulated checkout/order history. No ratings or verified inventory are claimed. Secure order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
+- Phase 1 foundation: original shell was pushed in `2030566`; current local changes add direct product/supplier/cart/order/seller/admin/assistant/editorial/legal routes, a lazy standalone-page module, ErrorBoundary, route tests, footer sitemap, and product-to-supplier/cart navigation. These latest route-foundation changes are not yet committed or pushed.
+- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, preservation of browser-created listings, and a browser-persistent cart with clearly simulated checkout/order history. Current local changes add basic sample product details/specifications/related products, supplier profiles, and an enquiry-only quote link. No ratings or verified inventory are claimed. Image gallery, secure order lifecycle, seller/admin workflows, and full service/repository integration remain to be built.
 - Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
 
 ## Immediate next action
 
-The user must sign in to the Supabase dashboard and check whether an intended project exists. If it does, run the read-only statements in `supabase/inspection/schema_report.sql` separately in Supabase SQL Editor, inspect the metadata output, and provide the schema-only results for review. Do not provide keys, database passwords, customer data, or function source. If no project exists, create one and set its URL and public publishable/anon key in `.env.local` locally, never a service-role key.
+Continue with the remaining local marketplace service/seller/admin workflows. Supabase remains optional; before proposing migrations, the intended remote project must be identified and its existing schema and RLS policies reviewed using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data. locally, never a service-role key.
 
 ## Files changed by the latest implementation cycle
 

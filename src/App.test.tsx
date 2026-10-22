@@ -28,6 +28,50 @@ describe('routed application shell', () => {
     await waitFor(() => expect(document.title).toBe('Marketplace | Kijiji Connect'))
   })
 
+  it('renders product and supplier detail pages on direct URLs', async () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/products/1']}>
+        <App />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull())
+    const productPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
+    expect(productPage.getByRole('heading', { name: 'Fresh Avocado Grade A', level: 1 })).toBeVisible()
+    expect(productPage.getByText(/Price and availability are not verified/)).toBeVisible()
+    expect(productPage.getByRole('link', { name: 'View sample supplier profile' })).toHaveAttribute('href', '/suppliers/green-valley-farms-sample')
+    unmount()
+
+    render(
+      <MemoryRouter initialEntries={['/suppliers/green-valley-farms-sample']}>
+        <App />
+      </MemoryRouter>,
+    )
+    const supplierPage = within(await screen.findByText(/This example profile and its catalogue are illustrative/).then((text) => text.closest('.standalone-page') as HTMLElement))
+    expect(supplierPage.getByRole('heading', { name: 'Green Valley Farms (sample)', level: 1 })).toBeVisible()
+    expect(supplierPage.getByText(/not independently verified/)).toBeVisible()
+  })
+
+  it('renders a local cart route and the demo seller/admin boundaries', async () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/cart']}>
+        <App />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull())
+    const cartPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
+    expect(cartPage.getByRole('heading', { name: 'Your local demo cart', level: 1 })).toBeVisible()
+    expect(cartPage.getByText('Your cart is empty.')).toBeVisible()
+    unmount()
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Local demo moderation' })).toBeVisible()
+    expect(screen.getByText(/not a protected administrator or seller dashboard/)).toBeVisible()
+  })
+
   it('navigates between pages and updates the page title', async () => {
     render(
       <MemoryRouter>

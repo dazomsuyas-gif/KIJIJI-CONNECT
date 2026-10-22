@@ -1,41 +1,88 @@
 # Kijiji Connect implementation plan
 
-Status key: `[x]` verified complete; `[ ]` not complete; `[blocked]` requires an external dependency or safe prerequisite.
+Status key: `[x]` verified complete; `[ ]` not complete; `[blocked]` requires an external dependency or a safety prerequisite.
 
-## Ordered roadmap
+This roadmap compares the requested target with the existing implementation. Preserve working modules, complete safe local work in order, and verify each phase before pushing it. Do not apply migrations to a remote database, handle real payments, send messages, or claim live inventory/AI without owner-approved configuration and end-to-end provider tests.
 
-- [x] **Phase 1 — Audit and preserve.** Confirm the React/TypeScript/Vite architecture, existing UI, package scripts, Git checkpoint, current local Supabase scaffold, build, and lint. Do not replace working modules.
-- [ ] **Phase 2 — Database and identity foundation.**
-  - [x] Add a lazy Supabase client scaffold using public environment variables; ignore local environment files; document that client keys require RLS.
-  - [x] Add a read-only schema inspection script covering tables/columns/RLS, constraints, indexes, function signatures, triggers, and policies.
-  - [x] Add an account interface for Supabase email registration, sign-in, password recovery/update, and sign-out, with explicit setup/error states.
-  - [x] Load the Supabase SDK on demand so an unconfigured app does not include it in its initial bundle.
-  - [blocked] Determine whether a Supabase project exists and review its schema. Requires user to inspect their account and return schema-only metadata. No remote account inspection is available in this workspace.
-  - [ ] Design an additive migration plan for profiles, trusted server-side role assignment, RLS, storage, audit, and application data after schema review.
-  - [blocked] Test live authentication and build profile/role database access. Requires Supabase project URL and publishable key locally plus schema and RLS review.
-- [ ] **Phase 3 — Protected administrator dashboard and content management.** Requires authenticated backend authorization and approved schema.
-- [ ] **Phase 4 — Marketplace persistence, supplier records, product search, carts, orders, and buyer/seller access.** Requires database and server-side transaction logic.
-- [ ] **Phase 5 — Optional delivery/fulfilment records and provider integration boundaries.** Requires provider requirements and server-side validation.
-- [ ] **Phase 6 — Accommodation directory and enquiry/booking-request workflow.** Live availability requires authorized provider access.
-- [ ] **Phase 7 — Tourism packages, operators, and reservation requests.** Confirmations require responsible operator/provider confirmation.
-- [ ] **Phase 8 — Flight provider adapter and booking workflows.** Blocked on authorized provider access and commercial credentials held server-side.
-- [ ] **Phase 9 — Payment adapters, verified webhook processing, ledger, and commissions.** Blocked on an authorized provider and secure backend; never claim browser simulation is payment.
-- [ ] **Phase 10 — Secure AI backend, constrained tools, and support handoff.** Blocked on server-side deployment and provider authorization for live AI/WhatsApp Business.
-- [ ] **Phase 11 — Database-backed content, community, learning progress, and heritage editorial tools.** Requires approved data schema and RLS.
-- [ ] **Phase 12 — Accessibility, performance, security, responsive, and end-to-end verification.** Add tests as appropriate; no automated test runner currently exists.
-- [ ] **Phase 13 — Production deployment, environment setup, backups, monitoring, and release review.** Requires authorized hosting and operations configuration.
+## Phase 1 — Routes, reliability and shared UI foundation
 
-## Safety gates
+- [x] Preserve the existing React 19, TypeScript, Vite, React Router application and current local server.
+- [x] Route shell for Home, Marketplace, Travel, Learning, Business tools, AI Studio, Community, Payments, Integrations, Destinations, Activity, Account, Contact; page titles, unknown-route view, mobile navigation and SPA fallback.
+- [x] Add product/supplier details, cart, orders, seller/admin, assistant, articles/about/FAQ/privacy/terms as distinct direct routes.
+- [x] Lazy-load substantial page modules without breaking current route workflows.
+- [x] Add ErrorBoundary, scroll-to-top, accessible status/error handling, loading and empty states.
+- [x] Review sitemap/contact/social footer and verify direct-page interaction at narrow mobile width.
+- [x] Browser-test product and supplier details, cart/order navigation, unknown-route handling and mobile menu.
+- [ ] Add accessible toast patterns and cookie notice.
 
-1. Use only read-only catalog queries until the intended project and schema are identified.
-2. Do not treat the remote database as empty based on missing local configuration.
-3. Review all schema changes and permission policies before applying migrations.
-4. Never put service-role keys, database passwords, payment secrets, or AI provider secrets in browser-visible `VITE_` variables.
-5. Do not represent illustrative inventory, contact handoffs, or simulated payments as live services.
-6. Preserve the current uncommitted Supabase scaffold and any future user edits.
+## Phase 2 — Marketplace repository and seller/admin workflows
+
+- [x] Expand to 41 illustrative products; add URL-synced search, audience/category/location/price/availability filters, sorting and pagination.
+- [x] Add a browser-local cart and explicitly simulated checkout/order log.
+- [ ] Add typed repository/service boundary and local demo persistence.
+- [x] Add basic product detail/specifications/related listings, sample supplier profiles and user-directed quote handoff.
+- [ ] Add product image gallery and order timeline/print receipt; any status updates remain demo-only.
+- [ ] Add seller local listing CRUD, image preview, validation, price/stock edit, demo order status, sales summary and low-stock alert.
+- [ ] Add demo moderation/user-role/audit views. Browser-local role flags are never authorization.
+- [ ] Test persistence, role boundary, validation, empty/error states and mobile usability.
+
+## Phase 3 — Assistant tools with safe confirmation
+
+- [ ] Define AI provider interface and typed tool contracts; English/Kiswahili rule-based provider.
+- [ ] Implement safe tools for products, order drafts, seller changes, quotes, travel, lessons, tickets and human handoff.
+- [ ] Add confirmation before state changes, exact-change preview, local audit log and a reliable 30-second undo.
+- [ ] Add persistent chat, quick replies, typing state and clear history.
+- [ ] Handoff prepares user-reviewed WhatsApp/email links only; it never sends automatically.
+- [ ] Test the requested commands and permission/confirmation edge cases.
+- [blocked] Live LLM/WhatsApp messaging requires approved server deployment, provider account, secrets and provider-side tests.
+
+## Phase 4 — Language Academy
+
+- [ ] Cover English, French, Mandarin and Swahili at A1-C2 plus separate Native extension.
+- [ ] Write at least three full A1 and A2 units per language; label all higher-level content as outline/sample until complete.
+- [ ] Add vocabulary, grammar, reading, listening speech synthesis, available-device speaking, writing, flashcards/review, explained quizzes, pass-mark exams, streaks, printable non-accredited certificate and placement test.
+- [ ] Test progress, keyboard/accessibility behavior and missing browser speech APIs.
+
+## Phase 5 — Travel
+
+- [ ] Add dated illustrative Arusha/Moshi/Karatu/Zanzibar stays, amenity/photo/map data, indicative ranges and guest/date calculators.
+- [ ] Add route/fare ranges for JRO/ARK/DAR/ZNZ/NBO and packages with itineraries, inclusions/exclusions/group pricing.
+- [ ] Add filters/sort, enquiry review and explicit WhatsApp/email handoff actions.
+- [ ] Test date/guest/price calculations and empty/error states.
+- [blocked] Live hotel/flight inventory and confirmed bookings require authorized provider APIs and business credentials.
+
+## Phase 6 — Backend and provider scaffolding
+
+- [x] Existing Supabase client uses optional public environment configuration; `.env.local` remains ignored.
+- [x] Existing read-only schema inspection query covers metadata; no remote database changes have been made.
+- [ ] Prepare additive Supabase migrations for requested entities, RLS on every table, separate `user_roles`, security-definer role check and owner-only writes after schema review.
+- [ ] Add typed Supabase repository adapter, selected only with explicit configuration.
+- [ ] Add validated serverless chat/webhook/email/payment skeletons with safe not-configured results and webhook signature tests.
+- [ ] Document provider accounts, environment names, approval steps, rate limits and secrets handling in `INTEGRATIONS.md`.
+- [blocked] Live Supabase integration requires the intended project's schema-only report, public configuration and reviewed policies.
+- [blocked] Applying migrations requires schema review and explicit authorization; never apply them in this task.
+- [blocked] Real payment/email/WhatsApp/LLM adapters require approved provider accounts, server-side credentials and integration tests.
+
+## Phase 7 — Release quality and content
+
+- [ ] Add Playwright E2E and `npm run test:e2e` for marketplace, seller/assistant confirmation, academy, travel, unconfigured auth, mobile menu, deep links and 404.
+- [ ] Add CI for lint, typecheck, unit tests, build and E2E.
+- [ ] Add page metadata/OG/JSON-LD, sitemap/robots, PWA/offline page and CSP/security headers.
+- [ ] Download appropriately licensed photography, convert to local WebP, lazy-load, add alt text and image credits.
+- [ ] Add Privacy/Terms templates with lawyer-review warning and a cookie notice.
+- [ ] Fix the remaining TravelPlanningStudio React effect lint warning without disabling rules.
+- [ ] Update README, PROJECT_STATUS, KNOWN_ISSUES, SETUP_GUIDE, INTEGRATIONS and CREDITS to match tested behavior.
+- [ ] Run all quality checks, browser workflows, confirm clean Git state and keep localhost responding.
+
+## Safety and truthfulness gates
+
+1. Do not assume a remote database is empty or apply migrations before reviewing its schema and policies.
+2. Keep secrets, service-role keys, passwords and payment/AI credentials out of frontend code and Git.
+3. All local product/travel data and prices are illustrative and date-labelled; confirm with suppliers.
+4. Local assistant rules are not a real LLM. A click-to-chat link is not a WhatsApp Business integration.
+5. A checkout simulation is not a payment, an enquiry is not a booking, and local records are not shared business records.
+6. Do not commit environment files or perform destructive/irreversible operations without explicit authorization.
 
 ## Current next action
 
-User: check the Supabase dashboard for the intended project. If present, run each `SELECT` statement in `supabase/inspection/schema_report.sql` separately and return reviewed metadata only. If absent, create a project and set only the public URL/key in local `.env.local`; then run the read-only schema report for the new project. Do not run migrations yet.
-
-Agent: once metadata arrives, map existing objects and policies, identify naming conflicts and data-preservation requirements, then propose a migration plan for review. No migration has been applied. Auth interface build/lint verification passed and its unconfigured state was browser-checked; live Supabase authentication remains unverified because project credentials are absent.
+Complete the remaining Phase 2 marketplace workflows. Continue subsequent phases in order. Keep provider-only or remote-schema actions visibly blocked until their stated prerequisites exist.

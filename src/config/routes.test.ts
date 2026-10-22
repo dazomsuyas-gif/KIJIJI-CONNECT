@@ -25,6 +25,13 @@ describe('application routes', () => {
 
   it('does not resolve unknown paths or targets', () => {
     expect(getRouteForPath('/private-admin')).toBeUndefined()
+    expect(getRouteForPath('/products/invalid')).toBeUndefined()
     expect(getRouteForTarget('missing-section')).toBeUndefined()
+  })
+
+  it('resolves product and supplier detail routes without accepting arbitrary segments', () => {
+    expect(getRouteForPath('/products/42')).toMatchObject({ page: 'product-detail', title: 'Product details' })
+    expect(getRouteForPath('/suppliers/sample-business')).toMatchObject({ page: 'supplier-profile', title: 'Supplier profile' })
+    expect(getRouteForPath('/products/42/extra')).toBeUndefined()
   })
 })

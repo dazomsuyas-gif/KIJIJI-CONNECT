@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
 import './App.css'
 import { generateDemoContent } from './services/demoAi'
@@ -22,6 +22,7 @@ import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
 import { getRouteForPath, getRouteForTarget } from './config/routes'
 import { translations, type AppLanguage } from './config/translations'
 import { storageRepository } from './services/storageRepository'
+import type { StandalonePageId } from './components/StandalonePages'
 import {
   catalogueLastUpdated,
   marketplaceCategories as categories,
@@ -37,6 +38,10 @@ import {
   type TravelAssistantCommand,
   type TravelBookingRequest,
 } from './components/TravelPlanningStudio'
+
+const StandalonePages = lazy(() =>
+  import('./components/StandalonePages').then((module) => ({ default: module.StandalonePages })),
+)
 
 type Message = {
   id: number
@@ -360,6 +365,21 @@ function App() {
   }, [language, location.pathname, location.state])
 
   const currentPage = activeRoute?.page ?? 'not-found'
+  const standalonePageIds: StandalonePageId[] = [
+    'product-detail',
+    'supplier-profile',
+    'cart',
+    'orders',
+    'seller-dashboard',
+    'admin',
+    'assistant',
+    'articles',
+    'about',
+    'faq',
+    'privacy',
+    'terms',
+  ]
+  const standalonePage = standalonePageIds.find((page) => page === currentPage) ?? null
   const searchText = searchParams.get('q') ?? ''
   const audienceParam = searchParams.get('audience')
   const activeFilter: 'All Products' | ProductAudience =
@@ -513,6 +533,13 @@ function App() {
     return [{ product, quantity: item.quantity, unitPrice, lineTotal: unitPrice * item.quantity }]
   })
   const cartSubtotal = cartLines.reduce((total, line) => total + line.lineTotal, 0)
+  const productIdFromPath = location.pathname.startsWith('/products/')
+    ? Number(location.pathname.slice('/products/'.length))
+    : null
+  const routeProduct = products.find((product) => product.id === productIdFromPath)
+  const supplierSlugFromPath = location.pathname.startsWith('/suppliers/')
+    ? decodeURIComponent(location.pathname.slice('/suppliers/'.length))
+    : undefined
   const selectedPaymentMethod = demoPaymentMethods.find((method) => method.id === paymentMethod)
   const parsedQuantity = Number(paymentQuantity)
   const checkoutUnitPrice =
@@ -1013,6 +1040,9 @@ function App() {
         </nav>
 
         <div className="topbar-actions">
+          <Link className="ghost-button compact" to="/cart" aria-label={`Open cart, ${cartLines.reduce((total, line) => total + line.quantity, 0)} items`}>
+            Cart ({cartLines.reduce((total, line) => total + line.quantity, 0)})
+          </Link>
           <button type="button" className="ghost-button" onClick={() => navigateToTarget('catalog-search', true)}>
             Search
           </button>
@@ -1048,6 +1078,23 @@ function App() {
         ) : (
           <>
         {storageError && <p className="storage-error" role="alert">{storageError}</p>}
+        {standalonePage && (
+          <Suspense fallback={<p className="loading-state" role="status">Loading this page…</p>}>
+            <StandalonePages
+              page={standalonePage}
+              product={routeProduct}
+              products={products}
+              supplierName={supplierSlugFromPath}
+              cartLines={cartLines}
+              orders={orderRecords}
+              cartSubtotal={cartSubtotal}
+              onAddToCart={handleAddToCart}
+              onUpdateCartQuantity={handleUpdateCartQuantity}
+              onRemoveFromCart={handleRemoveFromCart}
+              onCheckout={handleOpenCartCheckout}
+            />
+          </Suspense>
+        )}
         <section id="home" data-route-page="home" className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow">One platform · Tanzania-connected</span>
@@ -1463,7 +1510,9 @@ function App() {
             {visibleProducts.map((product) => (
               <article key={product.id} className="product-card">
                 <div className="product-image-wrap">
-                  <img src={product.image} alt={product.name} onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} />
+                    <Link to={`/products/${product.id}`} aria-label={`View ${product.name} details`}>
+                      <img src={product.image} alt={product.name} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} />
+                    </Link>
                   <span className="product-status">{product.stock}</span>
                 </div>
 
@@ -1473,7 +1522,7 @@ function App() {
                     <span className="badge badge--gold">Sample listing</span>
                   </div>
 
-                  <h3>{product.name}</h3>
+                  <h3><Link to={`/products/${product.id}`}>{product.name}</Link></h3>
                   <p>{product.description}</p>
 
                   <div className="product-pricing">
@@ -1510,6 +1559,7 @@ function App() {
                           ? `Add another (${cartItems.find((item) => item.productId === product.id)?.quantity} in cart)`
                           : 'Add to cart'}
                       </button>
+                      <Link className="secondary-button" to={`/products/${product.id}`}>Details</Link>
                       <button type="button" className="primary-button buy-button" onClick={() => handleOpenCheckout(product)}>Buy now</button>
                       {product.isDemoUserListing && <button type="button" className="remove-listing" onClick={() => handleRemoveProduct(product.id)}>Remove</button>}
                     </div>
@@ -1614,7 +1664,7 @@ function App() {
                   <div className="supplier-icon">{supplier.name.slice(0, 2).toUpperCase()}</div>
                   <div>
                     <div className="supplier-headline">
-                      <h3>{supplier.name}</h3>
+                        <h3><Link to={`/suppliers/${supplier.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}>{supplier.name}</Link></h3>
                       <span className="badge badge--gold">Sample profile</span>
                     </div>
                     <p>{supplier.category}</p>
@@ -1746,6 +1796,21 @@ function App() {
           <p className="brand-name">Kijiji Connect</p>
           <small>Professional platform for trade, community, learning and heritage.</small>
         </div>
+        <nav className="footer-sitemap" aria-label="Footer sitemap">
+          <p>Explore</p>
+          <Link to="/marketplace">Marketplace</Link>
+          <Link to="/cart">Cart</Link>
+          <Link to="/orders">Orders</Link>
+          <Link to="/seller">Seller workspace · demo</Link>
+          <Link to="/admin">Moderation · demo</Link>
+          <Link to="/learning">Language Academy</Link>
+          <Link to="/travel">Travel planning</Link>
+          <Link to="/articles">Articles</Link>
+          <Link to="/about">About</Link>
+          <Link to="/faq">FAQ</Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+        </nav>
         <div>
           <p>Arusha, Tanzania</p>
           <small>Sample business information for development only.</small>

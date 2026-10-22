@@ -12,6 +12,18 @@ export type AppPageId =
   | 'activity'
   | 'account'
   | 'contact'
+  | 'product-detail'
+  | 'supplier-profile'
+  | 'cart'
+  | 'orders'
+  | 'seller-dashboard'
+  | 'admin'
+  | 'assistant'
+  | 'articles'
+  | 'about'
+  | 'faq'
+  | 'privacy'
+  | 'terms'
 
 export type AppRoute = {
   path: string
@@ -34,10 +46,29 @@ export const appRoutes: AppRoute[] = [
   { path: '/activity', page: 'activity', sectionId: 'notifications', title: 'Activity' },
   { path: '/account', page: 'account', sectionId: 'my-account', title: 'My account' },
   { path: '/contact', page: 'contact', sectionId: 'ai-assistant', title: 'Contact and support' },
+  { path: '/cart', page: 'cart', sectionId: 'cart-page', title: 'Shopping cart' },
+  { path: '/orders', page: 'orders', sectionId: 'orders-page', title: 'Demo orders' },
+  { path: '/seller', page: 'seller-dashboard', sectionId: 'seller-page', title: 'Seller workspace' },
+  { path: '/admin', page: 'admin', sectionId: 'admin-page', title: 'Demo moderation' },
+  { path: '/assistant', page: 'assistant', sectionId: 'assistant-page', title: 'Guided assistant' },
+  { path: '/articles', page: 'articles', sectionId: 'articles-page', title: 'Articles' },
+  { path: '/about', page: 'about', sectionId: 'about-page', title: 'About Kijiji Connect' },
+  { path: '/faq', page: 'faq', sectionId: 'faq-page', title: 'Frequently asked questions' },
+  { path: '/privacy', page: 'privacy', sectionId: 'privacy-page', title: 'Privacy notice' },
+  { path: '/terms', page: 'terms', sectionId: 'terms-page', title: 'Terms of use' },
 ]
 
 export function getRouteForPath(pathname: string) {
-  return appRoutes.find((route) => route.path === pathname)
+  const staticRoute = appRoutes.find((route) => route.path === pathname)
+  if (staticRoute) return staticRoute
+
+  if (/^\/products\/\d+$/.test(pathname)) {
+    return { path: pathname, page: 'product-detail' as const, sectionId: 'product-detail-page', title: 'Product details' }
+  }
+  if (/^\/suppliers\/[^/]+$/.test(pathname)) {
+    return { path: pathname, page: 'supplier-profile' as const, sectionId: 'supplier-profile-page', title: 'Supplier profile' }
+  }
+  return undefined
 }
 
 export function getRouteForSection(sectionId: string) {

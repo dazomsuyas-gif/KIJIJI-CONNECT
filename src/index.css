@@ -1,5 +1,7 @@
 :root {
-  --font-sans: 'Times New Roman', Times, serif;
+  --font-body: 'Times New Roman', Times, serif;
+  --font-heading: 'Times New Roman', Times, serif;
+  --font-sans: var(--font-body);
   --color-forest: #173c2b;
   --color-forest-deep: #102a1f;
   --color-cream: #f7f4ea;
@@ -8,7 +10,7 @@
   --color-ink: #1d2a1d;
   --color-muted: #657168;
   --focus-ring: #b77039;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   line-height: 1.6;
   font-weight: 400;
   color: var(--color-ink);
@@ -48,6 +50,16 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
 }
 
 button:focus-visible,

@@ -17,9 +17,9 @@ Last reviewed: 2026-10-28
 - Travel enquiries only prepare user-reviewed WhatsApp/email drafts; they do not contact providers, reserve inventory, or confirm a booking.
 - The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent.
 - Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, not-found rendering, and sample marketplace catalogue/filter behavior. Automated browser end-to-end coverage has not yet been added.
-- The route foundation maps existing modules to separate URLs, but most page contents remain mounted in the same application shell. Product detail, cart/order history, seller/admin, privacy, terms, FAQ and fully independent page components are not yet implemented.
+- The app uses one shared shell; new standalone routes are lazy-loaded views within that shell rather than independent deployments. Seller/admin pages are safety-labeled previews only and are not protected workflows.
 - The product catalogue contains more than 40 illustrative examples with placeholder prices and sample availability. Supplier inventory, ratings, and prices are not verified live data.
-- Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. A local cart and simulated order log exist; they are browser-local records, not real transactions. Product detail pages, secure order lifecycle and server-persisted seller workflows remain unimplemented.
+- Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. Product detail/specifications, related products, supplier sample profiles, enquiry-only quote links, local cart and simulated order history are available. These are browser-local previews, not real transactions or verified inventory. Product image gallery, secure order lifecycle and server-persisted seller workflows remain unimplemented.
 - No authorized payment, hotel, airline, tourism, messaging, email, or AI provider integration is configured.
 
 ## Quality and operations
