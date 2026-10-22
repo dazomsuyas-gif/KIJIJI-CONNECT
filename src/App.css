@@ -900,6 +900,37 @@ button {
   gap: 0.6rem;
 }
 
+.market-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.market-filters label {
+  display: grid;
+  gap: 0.35rem;
+  color: #435344;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.market-filters input,
+.market-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.7rem;
+  border: 1px solid rgba(18, 41, 25, 0.16);
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  background: #fffdf9;
+  color: #1d2a1d;
+}
+
+.market-filters > button {
+  justify-self: start;
+}
+
 .segment,
 .chip {
   padding: 0.7rem 1rem;
@@ -918,6 +949,19 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.1rem;
+}
+
+.market-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+}
+
+.market-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .product-card {
@@ -1172,6 +1216,7 @@ button {
   .phase-layout,
   .service-grid,
   .market-grid,
+  .market-filters,
   .supplier-grid,
   .tour-grid {
     grid-template-columns: 1fr;
@@ -1208,6 +1253,10 @@ button {
   .chat-input-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .market-filters {
+    grid-template-columns: 1fr;
   }
 
   .segment,

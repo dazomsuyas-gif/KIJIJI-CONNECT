@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, NavLink, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
 import './App.css'
 import { generateDemoContent } from './services/demoAi'
 import {
@@ -22,31 +22,21 @@ import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
 import { getRouteForPath, getRouteForTarget } from './config/routes'
 import { translations, type AppLanguage } from './config/translations'
 import { storageRepository } from './services/storageRepository'
+import {
+  catalogueLastUpdated,
+  marketplaceCategories as categories,
+  productsSeed,
+  productArtworkFor,
+  sampleAvailability,
+  type Product,
+  type ProductAudience,
+} from './services/marketplaceCatalog'
 import type { TravelType } from './services/travelCatalog'
 import {
   TravelPlanningStudio,
   type TravelAssistantCommand,
   type TravelBookingRequest,
 } from './components/TravelPlanningStudio'
-
-type ProductAudience = 'B2B' | 'B2C'
-
-type Product = {
-  id: number
-  name: string
-  category: string
-  description: string
-  price: number
-  wholesalePrice: number
-  minimumWholesaleQty: number
-  unit: string
-  location: string
-  seller: string
-  audience: ProductAudience[]
-  stock: string
-  image: string
-  isDemoUserListing?: boolean
-}
 
 type Message = {
   id: number
@@ -108,21 +98,6 @@ const navItems = [
   { label: 'Activity', href: '/activity' },
   { label: 'Account', href: '/account' },
   { label: 'Contact', href: '/contact' },
-]
-
-const categories = [
-  'All categories',
-  'Agricultural products',
-  'Food & beverages',
-  'Construction materials',
-  'Electronics',
-  'Household goods',
-  'Clothing & fashion',
-  'Furniture',
-  'Personal care',
-  'Office supplies',
-  'Tourism products',
-  'Other merchandise',
 ]
 
 const quickPrompts = [
@@ -200,6 +175,14 @@ function readStored<T>(key: string, fallback: T): T {
   return storageRepository.read(key, fallback)
 }
 
+function loadProducts(): Product[] {
+  return readStored<Product[]>(storageKeys.products, [])
+    .filter((product) => product.isDemoUserListing)
+    .map((product) =>
+      product.image.startsWith('/') ? product : { ...product, image: productArtworkFor(product.category) },
+    )
+}
+
 function writeStored<T>(key: string, value: T): void {
   storageRepository.write(key, value)
 }
@@ -236,117 +219,21 @@ const whatsappUrl = (message: string) =>
 
 const whatsappSupportUrl = `${businessContact.whatsappUrl}?text=${encodeURIComponent('Hello Kijiji Connect, I need support with selling or buying on the platform.')}`
 
-const productsSeed: Product[] = [
-  {
-    id: 1,
-    name: 'Fresh Avocado Grade A',
-    category: 'Agricultural products',
-    description: 'Large, export-ready avocados harvested in Arusha with careful grading and packing.',
-    price: 4200,
-    wholesalePrice: 3200,
-    minimumWholesaleQty: 30,
-    unit: 'kg',
-    location: 'Arusha Urban',
-    seller: 'Green Valley Farms',
-    audience: ['B2B', 'B2C'],
-    stock: 'In stock',
-    image: '/fresh-produce.jpg',
-  },
-  {
-    id: 2,
-    name: 'Cement 50kg Premium',
-    category: 'Construction materials',
-    description: 'High-strength Portland cement suitable for construction and masonry projects.',
-    price: 28000,
-    wholesalePrice: 24500,
-    minimumWholesaleQty: 10,
-    unit: 'bag',
-    location: 'Moshi Road',
-    seller: 'BuildPro Supplies',
-    audience: ['B2B', 'B2C'],
-    stock: 'Low stock',
-    image: '/kijiji-construction-art.svg',
-  },
-  {
-    id: 3,
-    name: 'Solar Rechargeable Lantern',
-    category: 'Electronics',
-    description: 'Portable, rechargeable lighting for homes, shops and field use with USB charging.',
-    price: 26000,
-    wholesalePrice: 21000,
-    minimumWholesaleQty: 25,
-    unit: 'piece',
-    location: 'Central Arusha',
-    seller: 'VoltEast Traders',
-    audience: ['B2B', 'B2C'],
-    stock: 'Available',
-    image: '/kijiji-electronics-art.svg',
-  },
-  {
-    id: 4,
-    name: 'Premium Chai Masala Blend',
-    category: 'Food & beverages',
-    description: 'Handcrafted spiced tea blend for cafés, lodges and home kitchens.',
-    price: 8500,
-    wholesalePrice: 6200,
-    minimumWholesaleQty: 40,
-    unit: 'pack',
-    location: 'Njiro',
-    seller: 'Amani Kitchen Co.',
-    audience: ['B2C'],
-    stock: 'In stock',
-    image: '/fresh-produce.jpg',
-  },
-  {
-    id: 5,
-    name: 'Ergonomic Office Chair',
-    category: 'Office supplies',
-    description: 'Supportive seating for startups, schools and home offices with easy adjustability.',
-    price: 175000,
-    wholesalePrice: 152000,
-    minimumWholesaleQty: 5,
-    unit: 'piece',
-    location: 'Sokoine Road',
-    seller: 'Urban Workspace',
-    audience: ['B2B'],
-    stock: 'Available',
-    image: '/kijiji-product-art.svg',
-  },
-  {
-    id: 6,
-    name: 'Safari Travel Kit',
-    category: 'Tourism products',
-    description: 'Compact travel set for tourists and tour operators including reusable bottle and daypack.',
-    price: 34000,
-    wholesalePrice: 27000,
-    minimumWholesaleQty: 20,
-    unit: 'box',
-    location: 'Arusha City Centre',
-    seller: 'Serengeti Trail Goods',
-    audience: ['B2B', 'B2C'],
-    stock: 'Preorder',
-    image: '/kijiji-travel-art.svg',
-  },
-]
-
 const suppliers = [
   {
     name: 'Green Valley Farms',
     category: 'Agriculture',
     location: 'Arusha Urban',
-    items: 18,
   },
   {
     name: 'BuildPro Supplies',
     category: 'Construction',
     location: 'Moshi Road',
-    items: 12,
   },
   {
     name: 'VoltEast Traders',
     category: 'Electronics',
     location: 'Central Arusha',
-    items: 8,
   },
 ]
 
@@ -364,22 +251,19 @@ const formatTzs = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value)
 
-const productArtworkFor = (category: string) => {
-  if (category === 'Agricultural products' || category === 'Food & beverages') return '/fresh-produce.jpg'
-  if (category === 'Construction materials') return '/kijiji-construction-art.svg'
-  if (category === 'Electronics') return '/kijiji-electronics-art.svg'
-  if (category === 'Tourism products') return '/kijiji-travel-art.svg'
-  return '/kijiji-product-art.svg'
-}
-
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
+  const navigationType = useNavigationType()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const marketplaceParamsRef = useRef(new URLSearchParams(searchParams))
+  const previousPathnameRef = useRef(location.pathname)
   const activeRoute = getRouteForPath(location.pathname)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [language, setLanguage] = useState<AppLanguage>(() =>
     readStored('kijiji-connect-language', 'en'),
   )
+  const [homeSearchText, setHomeSearchText] = useState('')
   const [darkMode, setDarkMode] = useState(() =>
     readStored('kijiji-connect-dark-mode', false),
   )
@@ -401,6 +285,26 @@ function App() {
     }
     navigate(route.path, { state: { scrollTarget: focus ? targetId : route.sectionId } })
   }
+
+  const openMarketplaceSearch = (query: string) => {
+    const params = new URLSearchParams()
+    if (query.trim()) params.set('q', query.trim())
+    const destination = `/marketplace${params.size ? `?${params.toString()}` : ''}`
+    if (location.pathname === '/marketplace') {
+      marketplaceParamsRef.current = params
+      setSearchParams(params, { replace: true })
+      navigateToTarget('catalog-search', true)
+    } else {
+      navigate(destination, { state: { scrollTarget: 'catalog-search' } })
+    }
+  }
+
+  useEffect(() => {
+    if (navigationType === 'POP' || previousPathnameRef.current !== location.pathname) {
+      marketplaceParamsRef.current = new URLSearchParams(location.search)
+    }
+    previousPathnameRef.current = location.pathname
+  }, [location.pathname, location.search, navigationType])
 
   useEffect(() => {
     const route = getRouteForPath(location.pathname)
@@ -432,15 +336,48 @@ function App() {
   }, [language, location.pathname, location.state])
 
   const currentPage = activeRoute?.page ?? 'not-found'
+  const searchText = searchParams.get('q') ?? ''
+  const audienceParam = searchParams.get('audience')
+  const activeFilter: 'All Products' | ProductAudience =
+    audienceParam === 'B2B' || audienceParam === 'B2C' ? audienceParam : 'All Products'
+  const categoryParam = searchParams.get('category')
+  const activeCategory = categories.includes(categoryParam ?? '') ? categoryParam ?? 'All categories' : 'All categories'
+  const locationFilter = searchParams.get('location') ?? ''
+  const stockParam = searchParams.get('stock') ?? ''
+  const activeStock = [...sampleAvailability, 'Contact to confirm'].includes(stockParam) ? stockParam : ''
+  const sortParam = searchParams.get('sort')
+  const sortBy: 'relevance' | 'price-asc' | 'price-desc' | 'name-asc' =
+    sortParam === 'price-asc' || sortParam === 'price-desc' || sortParam === 'name-asc'
+      ? sortParam
+      : 'relevance'
+  const pageParam = Number(searchParams.get('page') ?? '1')
+  const currentCatalogPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1
+  const minPriceParam = Number(searchParams.get('minPrice') ?? '')
+  const maxPriceParam = Number(searchParams.get('maxPrice') ?? '')
+  const minPrice = searchParams.has('minPrice') && Number.isFinite(minPriceParam) && minPriceParam >= 0
+    ? minPriceParam
+    : null
+  const maxPrice = searchParams.has('maxPrice') && Number.isFinite(maxPriceParam) && maxPriceParam >= 0
+    ? maxPriceParam
+    : null
 
-  const [activeFilter, setActiveFilter] = useState<'All Products' | 'B2B' | 'B2C'>('All Products')
-  const [activeCategory, setActiveCategory] = useState('All categories')
-  const [searchText, setSearchText] = useState('')
-  const [products, setProducts] = useState<Product[]>(() =>
-    readStored(storageKeys.products, productsSeed).map((product) =>
-      product.image.startsWith('/') ? product : { ...product, image: productArtworkFor(product.category) },
-    ),
-  )
+  const updateMarketplaceParams = (updates: Record<string, string>, keepPage = false) => {
+    const next = new URLSearchParams(marketplaceParamsRef.current)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    })
+    if (!keepPage) next.delete('page')
+    marketplaceParamsRef.current = next
+    setSearchParams(next, { replace: true })
+  }
+
+  const clearMarketplaceParams = () => {
+    const next = new URLSearchParams()
+    marketplaceParamsRef.current = next
+    setSearchParams(next, { replace: true })
+  }
+  const [products, setProducts] = useState<Product[]>(() => [...productsSeed, ...loadProducts()])
   const [drafts, setDrafts] = useState<Draft[]>(() => readStored(storageKeys.drafts, []))
   const [posts, setPosts] = useState<CommunityPost[]>(() => readStored(storageKeys.posts, []))
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => readStored(storageKeys.lessons, []))
@@ -519,15 +456,28 @@ function App() {
     }
   }
 
-  const visibleProducts = products.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const matchesFilter =
       activeFilter === 'All Products' || product.audience.includes(activeFilter)
     const matchesCategory =
       activeCategory === 'All categories' || product.category === activeCategory
     const searchableText = `${product.name} ${product.category} ${product.description} ${product.seller} ${product.location}`.toLowerCase()
     const matchesSearch = searchableText.includes(searchText.trim().toLowerCase())
-    return matchesFilter && matchesCategory && matchesSearch
+    const matchesLocation = product.location.toLowerCase().includes(locationFilter.trim().toLowerCase())
+    const matchesMinPrice = minPrice === null || product.price >= minPrice
+    const matchesMaxPrice = maxPrice === null || product.price <= maxPrice
+    const matchesStock = !activeStock || product.stock === activeStock
+    return matchesFilter && matchesCategory && matchesSearch && matchesLocation && matchesMinPrice && matchesMaxPrice && matchesStock
+  }).sort((left, right) => {
+    if (sortBy === 'price-asc') return left.price - right.price
+    if (sortBy === 'price-desc') return right.price - left.price
+    if (sortBy === 'name-asc') return left.name.localeCompare(right.name)
+    return left.id - right.id
   })
+  const productsPerPage = 12
+  const pageCount = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage))
+  const visiblePage = Math.min(currentCatalogPage, pageCount)
+  const visibleProducts = filteredProducts.slice((visiblePage - 1) * productsPerPage, visiblePage * productsPerPage)
 
   const selectedPaymentMethod = demoPaymentMethods.find((method) => method.id === paymentMethod)
   const parsedQuantity = Number(paymentQuantity)
@@ -594,10 +544,7 @@ function App() {
         reply = `Opening ${sectionLabels[intent.section]}. You can ask me to help with the next step there.`
       }
     } else if (intent.type === 'search') {
-      setActiveCategory('All categories')
-      setActiveFilter('All Products')
-      setSearchText(intent.query)
-      navigateToTarget('marketplace')
+      openMarketplaceSearch(intent.query)
       reply = `Searching marketplace listings for “${intent.query}”. Review the matching listing and choose an action when you are ready.`
     } else if (intent.type === 'draft') {
       const draftDetails = { title: intent.title, kind: intent.kind, topic: intent.topic }
@@ -649,10 +596,7 @@ function App() {
         handleOpenCheckout(product)
         reply = `I opened the sandbox checkout for ${product.name}. Review the item and quantity yourself; payment is simulated only and no money will be charged.`
       } else {
-        setSearchText(query)
-        setActiveCategory('All categories')
-        setActiveFilter('All Products')
-        navigateToTarget('marketplace')
+        openMarketplaceSearch(query)
         reply = query
           ? `I could not match “${intent.productQuery}” to a listing. I searched the marketplace so you can check available products.`
           : 'Open Marketplace to choose a product, or ask me to find a specific item. Checkout is always a sandbox simulation, never a real payment.'
@@ -1014,12 +958,12 @@ function App() {
               <input
                 id="marketplace-search"
                 type="search"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
+                value={homeSearchText}
+                onChange={(event) => setHomeSearchText(event.target.value)}
                 aria-label="Search products and suppliers"
                 placeholder="Search products, businesses, tourism guides, or lessons"
               />
-              <button type="button" className="primary-button" onClick={() => navigateToTarget('marketplace')}>
+              <button type="button" className="primary-button" onClick={() => openMarketplaceSearch(homeSearchText)}>
                 Search
               </button>
             </div>
@@ -1268,42 +1212,64 @@ function App() {
             </a>
           </div>
 
+          <p className="phase-note">The catalogue contains more than 40 illustrative examples, not verified supplier offers. Sample prices and stock labels are placeholders; confirm availability and pricing directly with sellers. Sample catalogue date: {catalogueLastUpdated}. Search and filter settings can be shared as a URL.</p>
+
           <div className="market-search-panel">
             <label htmlFor="catalog-search">Search products and suppliers</label>
             <input
               id="catalog-search"
               type="search"
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => updateMarketplaceParams({ q: event.target.value })}
               placeholder="Product, category, supplier or location"
             />
           </div>
 
           <div className="market-toolbar">
-            <div className="toggle-row" aria-label="Product audience filter">
+            <div className="toggle-row" role="group" aria-label="Product audience filter">
               {['All Products', 'B2B', 'B2C'].map((filter) => (
                 <button
                   key={filter}
                   type="button"
                   className={activeFilter === filter ? 'segment active' : 'segment'}
-                  onClick={() => setActiveFilter(filter as 'All Products' | 'B2B' | 'B2C')}
+                  aria-pressed={activeFilter === filter}
+                  onClick={() => updateMarketplaceParams({ audience: filter === 'All Products' ? '' : filter })}
                 >
                   {filter}
                 </button>
               ))}
             </div>
 
-            <div className="filter-chips" aria-label="Category filter">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  className={activeCategory === category ? 'chip active' : 'chip'}
-                  onClick={() => setActiveCategory(category)}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className="market-filters">
+              <label>Category
+                <select aria-label="Category filter" value={activeCategory} onChange={(event) => updateMarketplaceParams({ category: event.target.value === 'All categories' ? '' : event.target.value })}>
+                  {categories.map((category) => <option key={category}>{category}</option>)}
+                </select>
+              </label>
+              <label>Location
+                <input aria-label="Location filter" type="search" value={locationFilter} onChange={(event) => updateMarketplaceParams({ location: event.target.value })} placeholder="Any location" />
+              </label>
+              <label>Minimum price (TZS)
+                <input aria-label="Minimum price" type="number" min="0" value={searchParams.get('minPrice') ?? ''} onChange={(event) => updateMarketplaceParams({ minPrice: event.target.value })} />
+              </label>
+              <label>Maximum price (TZS)
+                <input aria-label="Maximum price" type="number" min="0" value={searchParams.get('maxPrice') ?? ''} onChange={(event) => updateMarketplaceParams({ maxPrice: event.target.value })} />
+              </label>
+              <label>Sample availability
+                <select aria-label="Sample availability filter" value={activeStock} onChange={(event) => updateMarketplaceParams({ stock: event.target.value })}>
+                  <option value="">Any sample status</option>
+                  {[...sampleAvailability, 'Contact to confirm'].map((stock) => <option key={stock}>{stock}</option>)}
+                </select>
+              </label>
+              <label>Sort by
+                <select aria-label="Sort products" value={sortBy} onChange={(event) => updateMarketplaceParams({ sort: event.target.value === 'relevance' ? '' : event.target.value })}>
+                  <option value="relevance">Catalogue order</option>
+                  <option value="price-asc">Price: low to high</option>
+                  <option value="price-desc">Price: high to low</option>
+                  <option value="name-asc">Name: A to Z</option>
+                </select>
+              </label>
+              <button type="button" className="ghost-button small" onClick={clearMarketplaceParams}>Clear filters</button>
             </div>
           </div>
 
@@ -1326,7 +1292,11 @@ function App() {
             </form>
           </div>
 
-          <p className="market-result-count" role="status">{visibleProducts.length} products shown{searchText.trim() ? ` for "${searchText.trim()}"` : ''}</p>
+          <p className="market-result-count" role="status">
+            {filteredProducts.length === 0
+              ? 'No sample listings match these filters.'
+              : `Showing ${(visiblePage - 1) * productsPerPage + 1}–${Math.min(visiblePage * productsPerPage, filteredProducts.length)} of ${filteredProducts.length} sample listings${searchText.trim() ? ` for "${searchText.trim()}"` : ''}.`}
+          </p>
           <div className="market-grid">
             {visibleProducts.map((product) => (
               <article key={product.id} className="product-card">
@@ -1376,6 +1346,19 @@ function App() {
               </article>
             ))}
           </div>
+          {filteredProducts.length === 0 && (
+            <div className="empty-state">
+              <p>Try another search or clear the filters to see the full sample catalogue.</p>
+              <button type="button" className="secondary-button" onClick={clearMarketplaceParams}>Clear all filters</button>
+            </div>
+          )}
+          {pageCount > 1 && (
+            <nav className="market-pagination" aria-label="Marketplace pages">
+              <button type="button" className="secondary-button" disabled={visiblePage === 1} onClick={() => updateMarketplaceParams({ page: String(visiblePage - 1) }, true)}>Previous</button>
+              <span aria-live="polite">Page {visiblePage} of {pageCount}</span>
+              <button type="button" className="secondary-button" disabled={visiblePage === pageCount} onClick={() => updateMarketplaceParams({ page: String(visiblePage + 1) }, true)}>Next</button>
+            </nav>
+          )}
         </section>
 
         <section id="payments" data-route-page="payments" className="section-block">
@@ -1431,28 +1414,34 @@ function App() {
           </div>
 
           <div className="supplier-grid">
-            {suppliers.map((supplier) => (
-              <article key={supplier.name} className="supplier-card">
-                <div className="supplier-icon">{supplier.name.slice(0, 2).toUpperCase()}</div>
-                <div>
-                  <div className="supplier-headline">
-                    <h3>{supplier.name}</h3>
-                    <span className="badge badge--gold">Sample profile</span>
+            {suppliers.map((supplier) => {
+              const listingCount = products.filter((product) =>
+                product.seller.toLowerCase().includes(supplier.name.toLowerCase()),
+              ).length
+              return (
+                <article key={supplier.name} className="supplier-card">
+                  <div className="supplier-icon">{supplier.name.slice(0, 2).toUpperCase()}</div>
+                  <div>
+                    <div className="supplier-headline">
+                      <h3>{supplier.name}</h3>
+                      <span className="badge badge--gold">Sample profile</span>
+                    </div>
+                    <p>{supplier.category}</p>
+                    <small>{supplier.location}</small>
                   </div>
-                  <p>{supplier.category}</p>
-                  <small>{supplier.location}</small>
-                </div>
-                <div className="supplier-footer">
-                  <span>{supplier.items} products</span>
-                  <button type="button" className="ghost-button small" onClick={() => {
-                    setSearchText(supplier.name)
-                    setActiveCategory('All categories')
-                    setActiveFilter('All Products')
-                    navigateToTarget('marketplace')
-                  }}>View supplier listings</button>
-                </div>
-              </article>
-            ))}
+                  <div className="supplier-footer">
+                    <span>{listingCount} sample listing{listingCount === 1 ? '' : 's'}</span>
+                    <button
+                      type="button"
+                      className="ghost-button small"
+                      onClick={() => openMarketplaceSearch(supplier.name)}
+                    >
+                      View supplier listings
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </section>
 

@@ -1,6 +1,6 @@
 # Kijiji Connect project status
 
-Last reviewed: 2026-10-22
+Last reviewed: 2026-10-28
 
 ## Current architecture
 
@@ -16,20 +16,21 @@ Last reviewed: 2026-10-22
 
 ## Verified state
 
-- Latest production build after routing, preferences, storage adapter, and tests: passed with `npm run build`; the Supabase client remains split from the initial bundle.
-- Latest lint: passed with `npm run lint` and no warnings. The travel assistant now passes parsed command defaults through props instead of synchronously setting state in an effect.
-- Latest automated test run: 22 tests passed across 3 files using Vitest and Testing Library.
-- `git diff --check` passed. Git reported only its existing LF-to-CRLF working-copy notice for `src/App.tsx`.
-- Git base for the current phased implementation: `8789132` on `main`, tracking `origin/main`.
-- Phase 1 routing/design foundation changes are local and uncommitted; additional phases remain in progress. Preserve these changes.
-- The existing Vite server on `http://localhost:5173/` (PID 21676) returned HTTP 200 and the Kijiji Connect page title during the latest check.
-- Browser-verified marketplace behavior: 6 initial sample listings; B2B and B2C each show 5; Electronics shows 1; a no-match search shows 0. A temporary local listing was added with the expected “Contact to confirm” stock state, then removed. The checkout required a mobile number and explicitly stated that it was simulation-only; no payment provider was contacted. Browser-local test data was restored afterward.
+- Latest production build and TypeScript check after the marketplace changes: passed with `npm run build`; the Supabase client remains split from the initial bundle.
+- Latest lint: passed with `npm run lint` and no warnings.
+- Latest automated test run: 32 tests passed across 5 files using Vitest and Testing Library.
+- `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
+- Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
+- The Phase 2 marketplace catalogue and filter changes are currently local and uncommitted; preserve them.
+- The existing Vite server on `http://localhost:5173/` remained available during final browser checks.
+- Browser-verified marketplace behavior before Phase 2: 6 initial sample listings; B2B and B2C each show 5; Electronics shows 1; a no-match search shows 0. A temporary local listing was added with the expected “Contact to confirm” stock state, then removed. The checkout required a mobile number and explicitly stated that it was simulation-only; no payment provider was contacted. Browser-local test data was restored afterward.
 - Browser-verified travel behavior: stay, flight and package tabs each show illustrative options; an Arusha stay enquiry generated review-only WhatsApp/email drafts and clearly stated that no reservation or message was made. The local itinerary builder produced a plan. Test data was restored afterward.
 - Browser-verified language behavior: the English A1 practice assessment passed at 3/3, writing practice saved locally, and both were restored after the test. The result is not a certificate or official CEFR assessment.
 - Browser-verified local workflows: AI Studio content draft, community post, and order-follow-up demo workflow were created and removed/restored without publishing or sending anything externally.
 - All 13 primary navigation links resolve to application routes. Desktop (1280 px) and mobile (390 px) viewport checks found no horizontal overflow. Fresh browser console errors, page errors, and failed requests were zero during route checks. The local logo and image assets returned HTTP 200.
 - All supplied contact destinations were present in the rendered page, including `https://wa.me/255768868546`, the three exact email addresses, and both Instagram profiles.
 - Router browser checks: direct `/marketplace` loads and survives refresh; route-specific page section and title render; navigation and browser back work; unknown paths show a 404 page; Kiswahili navigation/headings and dark-theme preference persist; mobile menu opens at 390px without horizontal overflow.
+- Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the review-only sandbox checkout opens; hotel intent still transfers to travel. At 390px the marketplace has no horizontal overflow. No browser console errors, page errors, or failed requests were observed.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
 - The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
 - Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
@@ -50,8 +51,8 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 
 ## Current phased implementation
 
-- Phase 1 foundation: routed shell for existing sections, route metadata/title/404 support, Vercel fallback, responsive mobile navigation, theme and language preferences, initial shared storage adapter, and a 22-test Vitest/Testing Library suite.
-- Phase 2 commerce: baseline sample marketplace, local listing workflow and sandbox checkout exist; product catalog expansion, URL-synced filters, cart, order management, seller/admin workflow, and full service/repository integration remain to be built.
+- Phase 1 foundation: complete and pushed in `2030566`; routed shell for existing sections, route metadata/title/404 support, Vercel fallback, responsive mobile navigation, theme and language preferences, initial shared storage adapter, and automated tests.
+- Phase 2 commerce: current local slice adds a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, and preservation of browser-created listings. No ratings or verified inventory are claimed. Cart/order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
 - Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
 
 ## Immediate next action

@@ -21,7 +21,7 @@ npm test
 npm run build
 ```
 
-The project includes Vitest and Testing Library checks. The latest Phase 1 verification passed the build, lint, and automated test suite.
+The project includes Vitest and Testing Library checks for routing, local persistence, and the illustrative marketplace catalogue and filters. Run the checks again after making local changes.
 
 ## 2. Check whether you already have Supabase
 
@@ -61,6 +61,6 @@ The functions report lists names and signatures only. If a project has sensitive
 
 ## 4. Current capability boundaries
 
-The browser app remains a frontend prototype until authentication, database policies, trusted server operations, and provider integrations are implemented and configured. The Supabase helper and email authentication interface are present, but live login is unavailable until project configuration is set. A migration, administrator role, persistent marketplace, booking, payment, AI, or WhatsApp Business connection is not currently active.
+The browser app remains a frontend prototype until authentication, database policies, trusted server operations, and provider integrations are implemented and configured. Marketplace search, filters, sorting, and pagination work against local illustrative examples; they are not live supplier listings. The Supabase helper and email authentication interface are present, but live login is unavailable until project configuration is set. A migration, administrator role, shared marketplace, booking, payment, AI, or WhatsApp Business connection is not currently active.
 
 For deployment and the verified current feature boundaries, see `README.md`.

@@ -54,7 +54,7 @@ export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
     return { type: 'contact' }
   }
 
-  if (/\b(?:plan|find|search|book|booking|reserve|trip|stay|hotel|flight|ticket|airline|package|airport|safari)\b/.test(normalized)) {
+  if (/\b(?:plan|book|booking|reserve|trip|stay|hotel|flight|ticket|airline|package|airport|safari|tour)\b/.test(normalized)) {
     return { type: 'navigate', section: 'travel-booking' }
   }
 
