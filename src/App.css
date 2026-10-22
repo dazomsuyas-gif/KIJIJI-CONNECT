@@ -690,6 +690,66 @@ button {
   color: rgba(19, 41, 24, 0.78);
 }
 
+.auth-panel {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 0.75rem;
+}
+
+.auth-panel h3,
+.auth-panel p {
+  margin: 0;
+}
+
+.auth-panel code {
+  overflow-wrap: anywhere;
+}
+
+.auth-panel__identity {
+  display: grid;
+  justify-items: start;
+  gap: 0.65rem;
+}
+
+.auth-form {
+  display: grid;
+  width: 100%;
+  gap: 0.8rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 650;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid rgba(18, 41, 25, 0.2);
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  color: #1d2a1d;
+}
+
+.auth-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.auth-security-note {
+  color: rgba(19, 41, 24, 0.7);
+  font-size: 0.9rem;
+}
+
+.auth-feedback {
+  color: #1f5a38;
+  font-weight: 600;
+}
+
 .contact-list {
   display: grid;
   gap: 0.8rem;

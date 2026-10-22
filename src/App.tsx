@@ -12,6 +12,7 @@ import {
   type LearningLevelId,
 } from './services/languageLearning'
 import { LanguageLearningStudio } from './components/LanguageLearningStudio'
+import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
 import type { TravelType } from './services/travelCatalog'
 import {
   TravelPlanningStudio,
@@ -1304,9 +1305,9 @@ function App() {
         </section>
 
         <section id="my-account" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">My Account • Local preview</span><h2>Your activity overview</h2></div></div>
+          <div className="section-heading"><div><span className="eyebrow">My Account · Authentication setup</span><h2>Your account and activity</h2></div></div>
           <div className="account-grid">
-            <article className="phase-card account-summary"><div className="profile-avatar">KM</div><div><h3>Kelvin Msuya</h3><p>Business owner · Arusha, Tanzania</p><small>Demo profile—no account authentication is configured.</small></div></article>
+            <SupabaseAuthPanel />
             <article className="phase-card"><h3>Workspace activity</h3><ul className="activity-list"><li>Marketplace listings: {products.length}</li><li>Content drafts: {drafts.length}</li><li>Community posts: {posts.length}</li><li>Lessons completed: {completedLessons.length}</li></ul></article>
           </div>
         </section>

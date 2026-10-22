@@ -11,6 +11,12 @@ npm run dev
 
 Create a production build with `npm run build` and run the configured linter with `npm run lint`.
 
+## Supabase setup status
+
+The Supabase client dependency, optional client factory, and email authentication interface are prepared, but no Supabase project is configured in this checkout. Once configured, the interface supports email sign-up, sign-in, password recovery, password update, and sign-out. Copy `.env.example` to `.env.local`, then set the project URL and publishable/anon key from the Supabase project settings. `.env.local` is ignored by Git. A publishable/anon key is intended for browser use only when the database has correct Row Level Security; never put a service-role or secret key in a `VITE_` variable.
+
+Authentication requests cannot be live-tested until valid project settings are configured. No database migrations or role policies have been added because the existing project's schema has not yet been reviewed. Before applying any migration, export the existing schema (tables, constraints, functions and Row Level Security policies) without data or secrets, inspect it, and plan backward-compatible changes. Authentication does not establish a seller/admin role or protect marketplace records; authorization and persistent application data remain unavailable until appropriate server/database policies are designed and configured.
+
 ## Current prototype modules
 
 - Marketplace: search and filter the sample catalogue, publish locally stored demo listings, and open WhatsApp enquiries.
