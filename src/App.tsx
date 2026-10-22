@@ -6,6 +6,18 @@ import {
   demoPaymentMethods,
   type DemoPaymentMethodId,
 } from './services/demoPayments'
+import { resolveDemoAssistantIntent, type AssistantSection } from './services/demoAssistant'
+import {
+  languageCourses,
+  type LearningLevelId,
+} from './services/languageLearning'
+import { LanguageLearningStudio } from './components/LanguageLearningStudio'
+import type { TravelType } from './services/travelCatalog'
+import {
+  TravelPlanningStudio,
+  type TravelAssistantCommand,
+  type TravelBookingRequest,
+} from './components/TravelPlanningStudio'
 
 type ProductAudience = 'B2B' | 'B2C'
 
@@ -30,6 +42,7 @@ type Message = {
   id: number
   role: 'user' | 'assistant'
   text: string
+  actions?: { label: string; href: string }[]
 }
 
 type Draft = {
@@ -74,15 +87,16 @@ type AutomationRun = {
 const navItems = [
   { label: 'Home', href: '#home' },
   { label: 'Marketplace', href: '#marketplace' },
-  { label: 'Payments', href: '#payments' },
+  { label: 'Travel', href: '#travel-booking' },
+  { label: 'Learning', href: '#learn-languages' },
+  { label: 'Business tools', href: '#automation' },
   { label: 'AI Studio', href: '#ai-studio' },
-  { label: 'Automation', href: '#automation' },
-  { label: 'Learn Languages', href: '#learn-languages' },
   { label: 'Community', href: '#community' },
-  { label: 'Tourism & Heritage', href: '#tourism-heritage' },
-  { label: 'AI Assistant', href: '#ai-assistant' },
-  { label: 'Notifications', href: '#notifications' },
-  { label: 'My Account', href: '#my-account' },
+  { label: 'Payments', href: '#payments' },
+  { label: 'Integrations', href: '#integrations' },
+  { label: 'Destinations', href: '#tourism-heritage' },
+  { label: 'Activity', href: '#notifications' },
+  { label: 'Account', href: '#my-account' },
 ]
 
 const categories = [
@@ -134,10 +148,10 @@ const contactLinks = [
 ]
 
 const quickPrompts = [
-  'How do I register as a seller?',
-  'How do I list a product?',
-  'How do I request a quote?',
-  'How do I contact support?',
+  'Find avocado products',
+  'Find a hotel in Arusha for 2 nights for 2 guests',
+  'Start my Swahili learning path',
+  'Contact support',
 ]
 
 const storageKeys = {
@@ -148,6 +162,31 @@ const storageKeys = {
   notifications: 'kijiji-connect-notifications',
   payments: 'kijiji-connect-demo-payments',
   automations: 'kijiji-connect-demo-automation-runs',
+  assistantMessages: 'kijiji-connect-assistant-messages',
+  travelRequests: 'kijiji-connect-travel-requests',
+  lessonScores: 'kijiji-connect-language-scores',
+  writingDrafts: 'kijiji-connect-language-writing',
+}
+
+const assistantGreeting: Message = {
+  id: 1,
+  role: 'assistant',
+  text: 'Welcome to Kijiji Connect. I can guide you through the marketplace, hotel and trip-planning enquiries, CEFR-informed language practice and business tools. I use local demonstrations—not a live AI service—and I never reserve or message a provider without your review.',
+}
+
+const sectionLabels: Record<AssistantSection, string> = {
+  home: 'Home',
+  marketplace: 'Marketplace',
+  payments: 'Payments',
+  'ai-studio': 'AI Studio',
+  automation: 'Automation',
+  'learn-languages': 'Language learning',
+  community: 'Community',
+  'travel-booking': 'Travel bookings',
+  'tourism-heritage': 'Tourism & Heritage',
+  'ai-assistant': 'AI Assistant',
+  notifications: 'Notifications',
+  'my-account': 'My Account',
 }
 
 const automationWorkflows = [
@@ -175,6 +214,10 @@ function createAutomationRun(workflow: (typeof automationWorkflows)[number]) {
   }
 }
 
+function createLocalId() {
+  return Date.now()
+}
+
 function readStored<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
 
@@ -191,12 +234,26 @@ function writeStored<T>(key: string, value: T): void {
   window.localStorage.setItem(key, JSON.stringify(value))
 }
 
-const lessonCatalog = [
-  { id: 'business-english', language: 'English', level: 'Beginner', title: 'Business English for sellers', text: 'Practice greetings, product details, prices and polite customer replies.' },
-  { id: 'french-greetings', language: 'French', level: 'Beginner', title: 'French greetings and introductions', text: 'Learn simple greetings and introduce yourself to a new customer.' },
-  { id: 'mandarin-basics', language: 'Chinese', level: 'Beginner', title: 'Mandarin pronunciation basics', text: 'Explore pinyin and tone awareness for practical speaking confidence.' },
-  { id: 'swahili-trade', language: 'Swahili', level: 'Beginner', title: 'Swahili for trade', text: 'Useful phrases for asking prices, quantities and delivery details.' },
-]
+function ChatTranscript({ messages }: { messages: Message[] }) {
+  return (
+    <div className="chat-window" aria-live="polite" aria-relevant="additions text">
+      {messages.map((message) => (
+        <div key={message.id} className={message.role === 'user' ? 'chat-bubble user' : 'chat-bubble assistant'}>
+          <p>{message.text}</p>
+          {message.actions && (
+            <div className="chat-message-actions">
+              {message.actions.map((action) => (
+                <a key={action.href} href={action.href} target="_blank" rel="noreferrer">
+                  {action.label}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const tourismPlaces = [
   { title: 'Arusha National Park', location: 'Arusha', text: 'A scenic park with wildlife, mountain views and hiking routes close to the city.', image: '/tanzania-landscape.jpg', imageAlt: 'Representative savannah landscape; not a verified photograph of the park.' },
@@ -357,6 +414,20 @@ function App() {
   const [drafts, setDrafts] = useState<Draft[]>(() => readStored(storageKeys.drafts, []))
   const [posts, setPosts] = useState<CommunityPost[]>(() => readStored(storageKeys.posts, []))
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => readStored(storageKeys.lessons, []))
+  const [lessonScores, setLessonScores] = useState<Record<string, number>>(() =>
+    readStored(storageKeys.lessonScores, {}),
+  )
+  const [writingDrafts, setWritingDrafts] = useState<Record<string, string>>(() =>
+    readStored(storageKeys.writingDrafts, {}),
+  )
+  const [learningLanguage, setLearningLanguage] = useState('english')
+  const [learningLevel, setLearningLevel] = useState<LearningLevelId>('A1')
+  const [travelCategory, setTravelCategory] = useState<TravelType>('stays')
+  const [travelQuery, setTravelQuery] = useState('Arusha')
+  const [travelAssistantCommand, setTravelAssistantCommand] = useState<TravelAssistantCommand | null>(null)
+  const [travelRequests, setTravelRequests] = useState<TravelBookingRequest[]>(() =>
+    readStored(storageKeys.travelRequests, []),
+  )
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => readStored(storageKeys.notifications, []))
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>(() => readStored(storageKeys.payments, []))
   const [automationRuns, setAutomationRuns] = useState<AutomationRun[]>(() => readStored(storageKeys.automations, []))
@@ -383,13 +454,10 @@ function App() {
   const [productFormError, setProductFormError] = useState('')
   const [storageError, setStorageError] = useState('')
   const [chatInput, setChatInput] = useState('')
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      role: 'assistant',
-      text: 'Hello! I am the guided Kijiji Connect assistant. Ask me about buying, selling, wholesale enquiries, or business support.',
-    },
-  ])
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [messages, setMessages] = useState<Message[]>(() =>
+    readStored(storageKeys.assistantMessages, [assistantGreeting]),
+  )
 
   const persist = <T,>(key: string, value: T) => {
     try {
@@ -418,73 +486,157 @@ function App() {
       : checkoutProduct?.price ?? 0
   const checkoutTotal = checkoutUnitPrice * (Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0)
 
-  const getAssistantReply = (input: string) => {
-    const lower = input.toLowerCase()
-
-    if (lower.includes('sell') || lower.includes('register') || lower.includes('business')) {
-      return 'To register as a seller, create a business profile, add your products, set wholesale and retail prices, and confirm delivery areas. After approval, you can publish listings and manage enquiries from your seller dashboard.'
-    }
-
-    if (lower.includes('quote') || lower.includes('wholesale') || lower.includes('bulk')) {
-      return 'For wholesale or quotation requests, select the product, choose quantity, and send the request to the supplier. The seller can then confirm stock, minimum order quantity, and delivery arrangements before acceptance.'
-    }
-
-    if (lower.includes('list') || lower.includes('product')) {
-      return 'To list a product, add a clear title, category, pricing, wholesale terms, unit of measure, stock status, and a business profile. Keep product descriptions accurate and add operational details such as delivery areas and stock availability.'
-    }
-
-    if (lower.includes('contact') || lower.includes('support') || lower.includes('help')) {
-      return 'You can contact the platform support team by WhatsApp at +255 768 868 546, or email msuyakelvin27@gmail.com, kelvinmsuya63@gmail.com, or dazomsuyas@gmail.com. You can also reach the business Instagram pages at @mk_africa21 and @kelvin_electronic_tz.'
-    }
-
-    if (lower.includes('buy') || lower.includes('order') || lower.includes('request')) {
-      return 'Buyers can browse the catalogue, filter by category and audience, request a quote, and submit an order request. Sellers review the enquiry and update the status from pending to accepted, processing, dispatched, or delivered.'
-    }
-
-    if (lower.includes('hello') || lower.includes('hi')) {
-      return 'Hello! I can help with listing products, seller onboarding, order requests, quotation support, and direct contact details for the business team.'
-    }
-
-    return 'I can help with marketplace onboarding, product listings, wholesale enquiries, order requests, and support links. Try asking about selling, buying, quotes, or contact support.'
-  }
-
-  const handleSendMessage = () => {
-    const trimmed = chatInput.trim()
+  const handleSendMessage = (messageText = chatInput) => {
+    const trimmed = messageText.trim()
     if (!trimmed) return
 
-    const nextUserMessage: Message = { id: Date.now(), role: 'user', text: trimmed }
-    const nextAssistantMessage: Message = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      text: getAssistantReply(trimmed),
+    const intent = resolveDemoAssistantIntent(trimmed)
+    let reply = ''
+    let actions: Message['actions']
+
+    if (intent.type === 'navigate') {
+      if (intent.section === 'travel-booking') {
+        const lowerMessage = trimmed.toLowerCase()
+        const category: TravelType = /\b(?:hotel|hotels|stay|stays|room|accommodation)\b/.test(lowerMessage)
+          ? 'stays'
+          : /\b(?:flight|flights|ticket|airline|airport)\b/.test(lowerMessage)
+            ? 'flights'
+            : /\b(?:tour|tours|package|packages|safari)\b/.test(lowerMessage)
+              ? 'packages'
+              : travelCategory
+        setTravelCategory(category)
+        const nonce = createLocalId()
+        setTravelAssistantCommand({ message: trimmed, nonce })
+        reply = `I’ve opened ${category === 'stays' ? 'hotel and stay' : category === 'flights' ? 'flight' : 'tour package'} options to help plan your enquiry. Check the travel dates, group size and illustrative prices, then review any enquiry before contacting a provider. Nothing is booked automatically.`
+      } else if (intent.section === 'learn-languages') {
+        const courseId = /\b(?:swahili|kiswahili)\b/i.test(trimmed)
+          ? 'swahili'
+          : /\bfrench\b/i.test(trimmed)
+            ? 'french'
+            : /\b(?:chinese|mandarin)\b/i.test(trimmed)
+              ? 'mandarin'
+              : 'english'
+        const course = languageCourses.find((item) => item.id === courseId) ?? languageCourses[0]
+        const nextLesson = course.levels.find((level) => !completedLessons.includes(`${course.id}-${level.id}`))
+          ?? course.levels[0]
+        setLearningLanguage(course.id)
+        setLearningLevel(nextLesson.id)
+        document.getElementById('learn-languages')?.scrollIntoView({ behavior: 'smooth' })
+        reply = `Opening ${course.name} (${nextLesson.band}). Study the material and pass the short check to record progress. The suggested modules follow learning goals but are not an accredited exam.`
+      } else {
+        document.getElementById(intent.section)?.scrollIntoView({ behavior: 'smooth' })
+        reply = `Opening ${sectionLabels[intent.section]}. You can ask me to help with the next step there.`
+      }
+    } else if (intent.type === 'search') {
+      setActiveCategory('All categories')
+      setActiveFilter('All Products')
+      setSearchText(intent.query)
+      document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+      reply = `Searching marketplace listings for “${intent.query}”. Review the matching listing and choose an action when you are ready.`
+    } else if (intent.type === 'draft') {
+      const draftDetails = { title: intent.title, kind: intent.kind, topic: intent.topic }
+      setDraftForm(draftDetails)
+      const generated = handleGenerateDraft(draftDetails)
+      document.getElementById('ai-studio')?.scrollIntoView({ behavior: 'smooth' })
+      reply = generated
+        ? `I created a local ${intent.kind.toLowerCase()} draft about ${intent.topic} and saved it in AI Studio. Please review it before sharing. No external AI was called.`
+        : 'I could not save that draft. Please check your browser storage and try again.'
+    } else if (intent.type === 'prepare-listing') {
+      if (intent.productName) {
+        setProductForm((current) => ({ ...current, name: intent.productName }))
+      }
+      document.getElementById('product-listing-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      window.setTimeout(() => document.getElementById('product-name')?.focus({ preventScroll: true }), 250)
+      reply = intent.productName
+        ? `I filled in “${intent.productName}” as the listing name. Add accurate pricing and seller details, then publish it yourself to this browser's demo catalogue.`
+        : 'The listing form is open. Add your product details and confirm everything before publishing it locally.'
+    } else if (intent.type === 'prepare-community-post') {
+      setPostForm((current) => ({
+        ...current,
+        title: intent.title || current.title,
+        room: intent.room,
+      }))
+      document.getElementById('community')?.scrollIntoView({ behavior: 'smooth' })
+      reply = 'The community post form is open with your discussion room selected. Add and review the post text, then choose Publish yourself. Nothing is shared with other users.'
+    } else if (intent.type === 'run-automation') {
+      const workflow = automationWorkflows.find((item) => item.id === intent.workflow)
+      if (workflow) {
+        handleRunAutomation(workflow)
+        document.getElementById('automation')?.scrollIntoView({ behavior: 'smooth' })
+        reply = `${workflow.outcome} You can review the run in Automation and Notifications.`
+      } else {
+        reply = 'I could not find that demo workflow. Open Automation to review the available workflows.'
+      }
+    } else if (intent.type === 'complete-lesson') {
+      const course = languageCourses.find((item) => item.id === intent.lesson) ?? languageCourses[0]
+      const nextLesson = course.levels.find((level) => !completedLessons.includes(`${course.id}-${level.id}`))
+        ?? course.levels[0]
+      setLearningLanguage(course.id)
+      setLearningLevel(nextLesson.id)
+      document.getElementById('learn-languages')?.scrollIntoView({ behavior: 'smooth' })
+      reply = `I opened the next ${course.name} practice module (${nextLesson.band}). Review the lesson and pass its knowledge check to track your progress. This is learning practice, not a certified assessment.`
+    } else if (intent.type === 'checkout') {
+      const query = intent.productQuery.toLowerCase().trim()
+      const product = query
+        ? products.find((item) => item.name.toLowerCase().includes(query) || query.includes(item.name.toLowerCase()))
+        : undefined
+      if (product) {
+        handleOpenCheckout(product)
+        reply = `I opened the sandbox checkout for ${product.name}. Review the item and quantity yourself; payment is simulated only and no money will be charged.`
+      } else {
+        setSearchText(query)
+        setActiveCategory('All categories')
+        setActiveFilter('All Products')
+        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+        reply = query
+          ? `I could not match “${intent.productQuery}” to a listing. I searched the marketplace so you can check available products.`
+          : 'Open Marketplace to choose a product, or ask me to find a specific item. Checkout is always a sandbox simulation, never a real payment.'
+      }
+    } else if (intent.type === 'contact') {
+      reply = 'Kijiji Connect demo support is not a live automated support desk. You can contact Kelvin directly using one of these links.'
+      actions = [
+        { label: 'WhatsApp support', href: whatsappSupportUrl },
+        { label: 'Email support', href: 'mailto:msuyakelvin27@gmail.com' },
+      ]
+    } else {
+      reply = 'I can help find marketplace listings, plan a stay or trip enquiry, navigate all sections, explore CEFR-informed language lessons, prepare business content, or reach customer support. Try “find avocado products”, “find a hotel in Arusha for 2 nights for 2 guests”, “start my Swahili learning path”, or “contact support”. I use local guidance—not a connected AI model. Nothing is booked or sent automatically.'
     }
 
-    setMessages((current) => [...current, nextUserMessage, nextAssistantMessage])
+    const timestamp = createLocalId()
+    const nextMessages = [
+      ...messages,
+      { id: timestamp, role: 'user' as const, text: trimmed },
+      { id: timestamp + 1, role: 'assistant' as const, text: reply, ...(actions ? { actions } : {}) },
+    ].slice(-40)
+    setMessages(nextMessages)
+    persist(storageKeys.assistantMessages, nextMessages)
     setChatInput('')
   }
 
-  const handleGenerateDraft = () => {
-    const title = draftForm.title.trim()
-    const topic = draftForm.topic.trim()
-    if (!title || !topic) return
+  const handleGenerateDraft = (details = draftForm): boolean => {
+    const title = details.title.trim()
+    const topic = details.topic.trim()
+    if (!title || !topic) return false
     setStorageError('')
 
     let generatedText: string
     try {
-      generatedText = generateDemoContent({ title, kind: draftForm.kind, topic })
+      generatedText = generateDemoContent({ title, kind: details.kind, topic })
     } catch (error) {
       console.error('Could not generate a demo content draft.', error)
       setStorageError(error instanceof Error ? error.message : 'The demo content draft could not be generated.')
-      return
+      return false
     }
 
-    const draft: Draft = { id: Date.now(), title, kind: draftForm.kind, text: generatedText }
+    const timestamp = createLocalId()
+    const draft: Draft = { id: timestamp, title, kind: details.kind, text: generatedText }
     const nextDrafts = [draft, ...drafts]
-    const nextNotifications = [{ id: Date.now() + 1, title: 'Content draft created', text: `${title} is saved in your AI Studio.`, time: 'Just now' }, ...notifications]
+    const nextNotifications = [{ id: timestamp + 1, title: 'Content draft created', text: `${title} is saved in your AI Studio.`, time: 'Just now' }, ...notifications]
     setDrafts(nextDrafts)
     setNotifications(nextNotifications)
     persist(storageKeys.drafts, nextDrafts)
     persist(storageKeys.notifications, nextNotifications)
+    return true
   }
 
   const handleAddPost = () => {
@@ -574,13 +726,47 @@ function App() {
     persist(storageKeys.notifications, nextNotifications)
   }
 
-  const handleToggleLesson = (lessonId: string) => {
-    setStorageError('')
+  const handlePassLearningModule = (lessonId: string, score: number) => {
     const nextLessons = completedLessons.includes(lessonId)
-      ? completedLessons.filter((id) => id !== lessonId)
+      ? completedLessons
       : [...completedLessons, lessonId]
+    const nextScores = { ...lessonScores, [lessonId]: Math.max(score, lessonScores[lessonId] ?? 0) }
+    const notice: NotificationItem = {
+      id: createLocalId(),
+      title: 'Language module passed',
+      text: `${lessonId.replace('-', ' ')} · practice score ${score}%. Saved to this browser only.`,
+      time: 'Just now',
+    }
+    const nextNotifications = [notice, ...notifications]
     setCompletedLessons(nextLessons)
+    setLessonScores(nextScores)
+    setNotifications(nextNotifications)
     persist(storageKeys.lessons, nextLessons)
+    persist(storageKeys.lessonScores, nextScores)
+    persist(storageKeys.notifications, nextNotifications)
+  }
+
+  const handleSaveLearningWriting = (lessonId: string, text: string) => {
+    const nextWritingDrafts = { ...writingDrafts, [lessonId]: text }
+    setWritingDrafts(nextWritingDrafts)
+    persist(storageKeys.writingDrafts, nextWritingDrafts)
+  }
+
+  const handleSaveTravelRequest = (request: TravelBookingRequest) => {
+    const nextRequests = [request, ...travelRequests].slice(0, 20)
+    const nextNotifications: NotificationItem[] = [
+      {
+        id: createLocalId(),
+        title: 'Travel enquiry draft prepared',
+        text: `${request.offerName}. No reservation has been made and no message has been sent.`,
+        time: 'Just now',
+      },
+      ...notifications,
+    ]
+    setTravelRequests(nextRequests)
+    setNotifications(nextNotifications)
+    persist(storageKeys.travelRequests, nextRequests)
+    persist(storageKeys.notifications, nextNotifications)
   }
 
   const handleOpenCheckout = (product: Product) => {
@@ -677,7 +863,7 @@ function App() {
           <img className="brand-mark" src="/kijiji-connect-logo.svg" alt="" aria-hidden="true" />
           <div>
             <p className="brand-name">Kijiji Connect</p>
-            <span className="brand-subtitle">Arusha marketplace</span>
+            <span className="brand-subtitle">Tanzania · Trade, travel & learning</span>
           </div>
         </div>
 
@@ -690,10 +876,16 @@ function App() {
         </nav>
 
         <div className="topbar-actions">
-          <button type="button" className="ghost-button">
+          <button type="button" className="ghost-button" onClick={() => {
+            document.getElementById('marketplace-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            document.getElementById('marketplace-search')?.focus({ preventScroll: true })
+          }}>
             Search
           </button>
-          <button type="button" className="primary-button" onClick={() => document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })}>
+          <button type="button" className="primary-button" onClick={() => {
+            document.getElementById('product-listing-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            document.getElementById('product-name')?.focus({ preventScroll: true })
+          }}>
             Sell now
           </button>
         </div>
@@ -703,14 +895,24 @@ function App() {
         {storageError && <p className="storage-error" role="alert">{storageError}</p>}
         <section id="home" className="hero-section">
           <div className="hero-copy">
-            <span className="eyebrow">Kijiji Connect · Interactive prototype</span>
-            <h1>Local opportunity. Connected across Tanzania.</h1>
+            <span className="eyebrow">One platform · Tanzania-connected</span>
+            <h1>Make your next move in Tanzania.</h1>
             <p>
-              Discover local businesses, find products and services, and take your next step with one connected marketplace.
+              Find local suppliers, build practical language skills, and start planning your northern Tanzania adventure.
             </p>
+
+            <div className="hero-primary-actions">
+              <button type="button" className="primary-button" onClick={() => document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })}>
+                Explore the marketplace
+              </button>
+              <button type="button" className="secondary-button" onClick={() => document.getElementById('travel-booking')?.scrollIntoView({ behavior: 'smooth' })}>
+                Plan a trip
+              </button>
+            </div>
 
             <div className="search-panel">
               <input
+                id="marketplace-search"
                 type="search"
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
@@ -724,16 +926,16 @@ function App() {
 
             <div className="hero-stats" aria-label="Platform summary">
               <div>
-                <strong>Local</strong>
-                <span>Built for Tanzanian trade</span>
+                <strong>Local trade</strong>
+                <span>Suppliers and buyers</span>
               </div>
               <div>
-                <strong>B2B + B2C</strong>
-                <span>Wholesale and retail</span>
+                <strong>7 learning stages</strong>
+                <span>Foundation through extension</span>
               </div>
               <div>
-                <strong>One place</strong>
-                <span>Market, learn and connect</span>
+                <strong>Trip planning</strong>
+                <span>Routes, stays and local tours</span>
               </div>
             </div>
           </div>
@@ -759,8 +961,8 @@ function App() {
         <section id="ai-studio" className="section-block">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">AI Content Studio • Local demo mode</span>
-              <h2>Prepare content for your business</h2>
+              <span className="eyebrow">AI Studio · Local content assistant</span>
+              <h2>Create a stronger first draft for your business.</h2>
             </div>
           </div>
 
@@ -770,7 +972,7 @@ function App() {
               <label>Content type<select value={draftForm.kind} onChange={(event) => setDraftForm((current) => ({ ...current, kind: event.target.value }))}><option>Product description</option><option>Social media post</option><option>Business article</option><option>Video script</option></select></label>
               <label>Topic and details<textarea required rows={3} value={draftForm.topic} onChange={(event) => setDraftForm((current) => ({ ...current, topic: event.target.value }))} placeholder="Describe what the content should communicate" /></label>
               <button type="submit" className="primary-button">Create draft</button>
-              <small>Uses the local demo generator. No prompt leaves your browser and no external AI model is connected.</small>
+              <small>Creates starter copy in this browser only. Review factual claims and tone before sharing; no external AI model is connected.</small>
             </form>
             <div className="phase-list">
               {drafts.length === 0 && <p className="empty-state">Your saved drafts will appear here.</p>}
@@ -781,10 +983,10 @@ function App() {
 
         <section id="automation" className="section-block">
           <div className="section-heading">
-            <div><span className="eyebrow">Business automation • Demo</span><h2>Let routine work follow a clear process</h2></div>
-            <span className="status-pill">Local simulations only</span>
+            <div><span className="eyebrow">Business operations · Local workflow preview</span><h2>Make recurring business tasks easier to follow.</h2></div>
+            <span className="status-pill">Connected services require integration</span>
           </div>
-          <p className="phase-note">Try a sample workflow to see its local result. These demos do not send messages, update stock, or call external systems.</p>
+          <p className="phase-note">Preview operational checklists in this browser. No messages are sent, stock is updated or external service is contacted. See Integrations to review what would be required to connect live workflows.</p>
           <div className="automation-grid">
             {automationWorkflows.map((workflow) => (
               <article key={workflow.id} className="automation-card">
@@ -800,13 +1002,38 @@ function App() {
         </section>
 
         <section id="learn-languages" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">Language learning • Sample lessons</span><h2>Build practical communication skills</h2></div><span className="status-pill">{completedLessons.length} of {lessonCatalog.length} completed</span></div>
-          <div className="lesson-grid">
-            {lessonCatalog.map((lesson) => {
-              const isComplete = completedLessons.includes(lesson.id)
-              return <article key={lesson.id} className="lesson-card"><span className="status-pill">{lesson.language} · {lesson.level}</span><h3>{lesson.title}</h3><p>{lesson.text}</p><button type="button" className={isComplete ? 'secondary-button' : 'primary-button'} onClick={() => handleToggleLesson(lesson.id)}>{isComplete ? 'Mark incomplete' : 'Mark lesson complete'}</button></article>
-            })}
+          <div className="section-heading"><div><span className="eyebrow">Language learning · CEFR-informed pathways</span><h2>Build practical skills at your own pace.</h2></div></div>
+          <LanguageLearningStudio
+            completedLessonIds={completedLessons}
+            levelScores={lessonScores}
+            onLessonPassed={handlePassLearningModule}
+            languageId={learningLanguage}
+            onLanguageChange={setLearningLanguage}
+            levelId={learningLevel}
+            onLevelChange={setLearningLevel}
+            onPlacementSuggestion={setLearningLevel}
+            writingDrafts={writingDrafts}
+            onSaveWriting={handleSaveLearningWriting}
+          />
+        </section>
+
+        <section id="travel-booking" className="section-block travel-booking-section">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Tanzania travel planning · Enquiry-only demo</span>
+              <h2>Stay, travel and explore with a clearer plan.</h2>
+            </div>
+            <span className="status-pill">No live fares or hotel availability</span>
           </div>
+          <TravelPlanningStudio
+            category={travelCategory}
+            onCategoryChange={setTravelCategory}
+            query={travelQuery}
+            onQueryChange={setTravelQuery}
+            assistantCommand={travelAssistantCommand}
+            requests={travelRequests}
+            onRequestCreated={handleSaveTravelRequest}
+          />
         </section>
 
         <section id="community" className="section-block">
@@ -827,41 +1054,74 @@ function App() {
         </section>
 
         <section id="tourism-heritage" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">Tourism & Heritage • Preview</span><h2>Explore places and cultural heritage</h2></div></div>
-          <div className="tour-grid">{tourismPlaces.map((place) => <article key={place.title} className="tour-card"><img src={place.image} alt={place.imageAlt} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} /><div className="tour-card__body"><span className="badge badge--gold">{place.location}</span><h3>{place.title}</h3><p>{place.text}</p></div></article>)}</div>
+          <div className="section-heading"><div><span className="eyebrow">Tourism & Heritage · Regional inspiration</span><h2>Explore Tanzania with local context.</h2></div></div>
+          <div className="tour-grid">{tourismPlaces.map((place) => <article key={place.title} className="tour-card"><img src={place.image} alt={place.imageAlt} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} /><div className="tour-card__body"><span className="badge badge--gold">{place.location}</span><h3>{place.title}</h3><p>{place.text}</p><button type="button" className="secondary-button" onClick={() => {
+            setTravelCategory('packages')
+            setTravelQuery(place.location === 'Ngorongoro' ? 'Arusha' : place.location)
+            document.getElementById('travel-booking')?.scrollIntoView({ behavior: 'smooth' })
+          }}>Explore nearby plans</button></div></article>)}</div>
           <p className="phase-note">Visitor details and availability should be confirmed with official destination operators before travel.</p>
+        </section>
+
+        <section id="integrations" className="section-block integration-section">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Customer channels · Integration readiness</span>
+              <h2>Designed to connect—once secure services are configured.</h2>
+            </div>
+            <span className="status-pill">Live integrations not configured</span>
+          </div>
+          <p className="phase-note">The guided assistant can prepare local drafts and contact links. It does not send or read customer messages, access an inbox, confirm bookings or initiate payments.</p>
+          <div className="integration-grid">
+            {[
+              { name: 'AI service & booking assistant', status: 'Provider and server endpoint required', description: 'Secure server integration, privacy notice and tested booking knowledge base.' },
+              { name: 'WhatsApp Business', status: 'Not connected', description: 'Business API number, consent, verified webhook and approved templates.' },
+              { name: 'Email & customer support', status: 'Prefilled draft links only', description: 'Verified sending domain, backend mail service, inbox ownership and reply handling.' },
+              { name: 'Hotels, airlines & tour operators', status: 'Not connected', description: 'Contracted inventory API or verified licensed-provider booking links.' },
+              { name: 'Mobile money & card payments', status: 'Sandbox display only', description: 'An authorized payment gateway, server-side checkout, signed webhooks and reconciliation.' },
+              { name: 'Customer accounts & reservations', status: 'Not configured', description: 'Secure authentication, database, role permissions and privacy-compliant retention.' },
+            ].map((integration) => (
+              <article className="integration-card" key={integration.name}>
+                <span className="integration-status-dot" aria-hidden="true" />
+                <div><span className="integration-card__label">Connection status</span><h3>{integration.name}</h3></div>
+                <strong>{integration.status}</strong>
+                <p>{integration.description}</p>
+              </article>
+            ))}
+          </div>
+          <div className="integration-next-step">
+            <div><strong>Start an integration conversation</strong><span>WhatsApp and email open a draft for you to review. They do not contact anyone until you press Send.</span></div>
+            <a className="primary-button compact" href={whatsappUrl('Hello, I would like to discuss setting up secure email, WhatsApp Business, AI assistant, booking, and payment integrations for Kijiji Connect.')} target="_blank" rel="noreferrer">Contact about integrations</a>
+          </div>
         </section>
 
         <section id="ai-assistant" className="section-block assistant-section">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">AI Business Assistant</span>
-              <h2>Guided marketplace help</h2>
+              <span className="eyebrow">Site-wide guided assistant</span>
+              <h2>Get help and complete demo tasks across the platform</h2>
             </div>
-            <span className="status-pill">Rule-based • demo mode</span>
+            <span className="status-pill">Local assistant • no external AI</span>
           </div>
 
           <div className="assistant-layout">
             <div className="assistant-panel">
-              <div className="chat-window" aria-live="polite">
-                {messages.map((message) => (
-                  <div key={message.id} className={message.role === 'user' ? 'chat-bubble user' : 'chat-bubble assistant'}>
-                    {message.text}
-                  </div>
-                ))}
-              </div>
+              <ChatTranscript messages={messages} />
 
               <div className="chat-input-row">
                 <input
                   value={chatInput}
                   onChange={(event) => setChatInput(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleSendMessage()
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      handleSendMessage()
+                    }
                   }}
-                  placeholder="Ask about selling, buying, quotes, or support..."
+                  placeholder="Search, create a draft, run a demo workflow..."
                   aria-label="Chat with AI assistant"
                 />
-                <button type="button" className="primary-button" onClick={handleSendMessage}>
+                <button type="button" className="primary-button" onClick={() => handleSendMessage()}>
                   Send
                 </button>
               </div>
@@ -872,7 +1132,7 @@ function App() {
                     key={prompt}
                     type="button"
                     className="prompt-chip"
-                    onClick={() => setChatInput(prompt)}
+                    onClick={() => handleSendMessage(prompt)}
                   >
                     {prompt}
                   </button>
@@ -936,11 +1196,11 @@ function App() {
             </div>
           </div>
 
-          <div className="listing-form-wrap">
+          <div id="product-listing-form" className="listing-form-wrap">
             <h3>Publish a demo listing</h3>
             <p>Enter accurate details to add a listing in this browser. Listings are not visible to other users until a backend is connected.</p>
             <form className="listing-form" onSubmit={(event) => { event.preventDefault(); handleAddProduct() }}>
-              <label>Product name<input required value={productForm.name} onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))} /></label>
+              <label>Product name<input id="product-name" required value={productForm.name} onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))} /></label>
               <label>Category<select value={productForm.category} onChange={(event) => setProductForm((current) => ({ ...current, category: event.target.value }))}>{categories.filter((category) => category !== 'All categories').map((category) => <option key={category}>{category}</option>)}</select></label>
               <label>Description<textarea required rows={3} value={productForm.description} onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))} /></label>
               <label>Retail price (TZS)<input required type="number" min="1" step="1" value={productForm.price} onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))} /></label>
@@ -1073,7 +1333,12 @@ function App() {
                 </div>
                 <div className="supplier-footer">
                   <span>{supplier.items} products</span>
-                  <button type="button" className="ghost-button small">View profile</button>
+                  <button type="button" className="ghost-button small" onClick={() => {
+                    setSearchText(supplier.name)
+                    setActiveCategory('All categories')
+                    setActiveFilter('All Products')
+                    document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+                  }}>View supplier listings</button>
                 </div>
               </article>
             ))}
@@ -1094,6 +1359,46 @@ function App() {
           </div>
         </section>
       </main>
+
+      <aside className={`assistant-widget${assistantOpen ? ' is-open' : ''}`} aria-label="Kijiji Connect guided assistant">
+        <section id="assistant-widget-panel" className="assistant-widget__panel" aria-label="Guided assistant chat" hidden={!assistantOpen}>
+            <div className="assistant-widget__heading">
+              <div>
+                <strong>Kijiji Connect assistant</strong>
+                <span>Guided help · local demo</span>
+              </div>
+              <button type="button" className="ghost-button small" aria-label="Close assistant" onClick={() => setAssistantOpen(false)}>Close</button>
+            </div>
+            <ChatTranscript messages={messages} />
+            <form className="chat-input-row assistant-widget__form" onSubmit={(event) => { event.preventDefault(); handleSendMessage() }}>
+              <input
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder="Ask or request an action..."
+                aria-label="Message the Kijiji Connect assistant"
+              />
+              <button type="submit" className="primary-button">Send</button>
+            </form>
+            <div className="prompt-row assistant-widget__prompts">
+              {quickPrompts.map((prompt) => (
+                <button key={prompt} type="button" className="prompt-chip" onClick={() => handleSendMessage(prompt)}>
+                  {prompt}
+                </button>
+              ))}
+            </div>
+            <p className="assistant-widget__disclaimer">Local guidance only. No external AI or live transactions.</p>
+        </section>
+        <button
+          type="button"
+          className="assistant-widget__launcher"
+          aria-controls="assistant-widget-panel"
+          aria-expanded={assistantOpen}
+          onClick={() => setAssistantOpen((current) => !current)}
+        >
+          <span aria-hidden="true">{assistantOpen ? '×' : '✦'}</span>
+          {assistantOpen ? 'Close assistant' : 'Ask Kijiji assistant'}
+        </button>
+      </aside>
 
       {checkoutProduct && (
         <div className="checkout-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) handleCloseCheckout() }}>

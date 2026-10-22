@@ -11,7 +11,8 @@ export function generateDemoContent({ title, kind, topic }: DemoContentRequest):
   }
 
   if (kind === 'Social media post') {
-    return `${title}: ${cleanTopic}. Discover a reliable local option, ask us about availability, and connect with the Kijiji Connect community. #Tanzania #LocalBusiness`
+    const postTitle = title.toLowerCase().includes(cleanTopic.toLowerCase()) ? title : `${title}: ${cleanTopic}`
+    return `${postTitle}. Discover a reliable local option, ask us about availability, and connect with the Kijiji Connect community. #Tanzania #LocalBusiness`
   }
 
   if (kind === 'Video script') {
