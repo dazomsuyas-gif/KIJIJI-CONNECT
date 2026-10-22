@@ -21,7 +21,7 @@ Authentication requests cannot be live-tested until valid project settings are c
 
 - Routed application foundation: Home, Marketplace, Travel, Learning, Business tools, AI Studio, Community, Payments, Integrations, Destinations, Activity, Account, and Contact have direct browser paths. Browser back/forward, page titles, unknown-route handling, a responsive navigation menu, and Vercel SPA fallback are enabled.
 - Accessibility and presentation foundation: Times New Roman typography is configured through CSS variables, reduced-motion behavior and visible keyboard focus are respected, and English/Kiswahili navigation and key headings plus a persistent light/dark preference are available.
-- Marketplace: search and filter more than 40 illustrative catalogue examples by audience, category, location, TZS price range and sample availability; sort and paginate results. Search/filter state is shareable in the URL. Listings are not verified supplier offers, and locally published listings remain in this browser.
+- Marketplace: search and filter more than 40 illustrative catalogue examples by audience, category, location, TZS price range and sample availability; sort and paginate results. Search/filter state is shareable in the URL. Add examples to a browser-local cart and prepare a simulated checkout/order record. Listings are not verified supplier offers, and locally published listings/orders remain in this browser.
 - Sandbox checkout: simulate mobile-money, bank-transfer and bank-card flows for common Tanzania payment methods; records stay in this browser and no provider is contacted.
 - AI Content Studio: generate and save starter copy templates locally. This is not connected to a generative AI service.
 - Business automation: run local examples for order follow-up, low-stock reminders and content repurposing; no outside messages or systems are triggered.
@@ -43,7 +43,7 @@ npm test
 npm run build
 ```
 
-Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting and pagination. End-to-end Playwright tests have not yet been added.
+Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, and the simulated cart/order workflow. End-to-end Playwright tests have not yet been added.
 
 The current route foundation displays the existing section-based modules at separate URLs; routes for product details, cart, orders, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
 

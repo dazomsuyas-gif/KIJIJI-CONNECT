@@ -21,7 +21,7 @@ npm test
 npm run build
 ```
 
-The project includes Vitest and Testing Library checks for routing, local persistence, and the illustrative marketplace catalogue and filters. Run the checks again after making local changes.
+The project includes Vitest and Testing Library checks for routing, local persistence, illustrative marketplace filtering, and simulated cart/order records. Run the checks again after making local changes.
 
 ## 2. Check whether you already have Supabase
 

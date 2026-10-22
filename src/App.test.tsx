@@ -166,4 +166,36 @@ describe('routed application shell', () => {
     expect(screen.getByTestId('location-search')).toHaveTextContent('sort=price-asc')
     expect(screen.getByTestId('location-search')).toHaveTextContent('page=2')
   })
+
+  it('persists a local cart and creates only an explicitly simulated order record', async () => {
+    render(
+      <MemoryRouter initialEntries={['/marketplace']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const avocadoCard = screen.getByRole('heading', { name: 'Fresh Avocado Grade A' }).closest('article')
+    expect(avocadoCard).not.toBeNull()
+    if (!avocadoCard) return
+    fireEvent.click(within(avocadoCard).getByRole('button', { name: 'Add Fresh Avocado Grade A to cart' }))
+    fireEvent.change(screen.getByLabelText('Quantity for Fresh Avocado Grade A'), { target: { value: '30' } })
+    expect(screen.getAllByText(/96,000/)).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Review sandbox checkout' }))
+    const checkout = screen.getByRole('dialog')
+    expect(within(checkout).getAllByText(/96,000/)).toHaveLength(2)
+    fireEvent.change(within(checkout).getByLabelText('Mobile money number'), { target: { value: '+255768868546' } })
+    fireEvent.click(within(checkout).getByRole('button', { name: 'Simulate payment' }))
+
+    expect((await screen.findAllByText(/no payment request was sent to a provider and no money was charged/)).length).toBeGreaterThan(0)
+    expect(screen.getByText(/0 items · saved only in this browser/)).toBeVisible()
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-cart') ?? '[]')).toEqual([])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close checkout' }))
+    const navigation = within(document.getElementById('primary-navigation')!)
+    fireEvent.click(navigation.getByRole('link', { name: 'Payments' }))
+    expect(await screen.findByText('Fresh Avocado Grade A × 30')).toBeVisible()
+    expect(screen.getAllByText('SIMULATED').length).toBeGreaterThan(0)
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-orders') ?? '[]')).toHaveLength(1)
+  })
 })

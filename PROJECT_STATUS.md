@@ -16,9 +16,9 @@ Last reviewed: 2026-10-28
 
 ## Verified state
 
-- Latest production build and TypeScript check after the marketplace changes: passed with `npm run build`; the Supabase client remains split from the initial bundle.
+- Latest production build and TypeScript check after cart/order work: passed with `npm run build`; the Supabase client remains split from the initial bundle.
 - Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 32 tests passed across 5 files using Vitest and Testing Library.
+- Latest automated test run: 33 tests passed across 5 files using Vitest and Testing Library.
 - `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
 - The Phase 2 marketplace catalogue and filter changes are currently local and uncommitted; preserve them.
@@ -30,7 +30,7 @@ Last reviewed: 2026-10-28
 - All 13 primary navigation links resolve to application routes. Desktop (1280 px) and mobile (390 px) viewport checks found no horizontal overflow. Fresh browser console errors, page errors, and failed requests were zero during route checks. The local logo and image assets returned HTTP 200.
 - All supplied contact destinations were present in the rendered page, including `https://wa.me/255768868546`, the three exact email addresses, and both Instagram profiles.
 - Router browser checks: direct `/marketplace` loads and survives refresh; route-specific page section and title render; navigation and browser back work; unknown paths show a 404 page; Kiswahili navigation/headings and dark-theme preference persist; mobile menu opens at 390px without horizontal overflow.
-- Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the review-only sandbox checkout opens; hotel intent still transfers to travel. At 390px the marketplace has no horizontal overflow. No browser console errors, page errors, or failed requests were observed.
+- Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the local cart recalculates wholesale pricing at MOQ, persists across refresh, and creates only a `SIMULATED` order record after the clearly labelled sandbox step. The cart clears after the simulation. Hotel intent still transfers to travel. At 390px marketplace/cart views have no horizontal overflow. No browser console errors, page errors, or failed requests were observed during successful checks.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
 - The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
 - Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
@@ -52,7 +52,7 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 ## Current phased implementation
 
 - Phase 1 foundation: complete and pushed in `2030566`; routed shell for existing sections, route metadata/title/404 support, Vercel fallback, responsive mobile navigation, theme and language preferences, initial shared storage adapter, and automated tests.
-- Phase 2 commerce: current local slice adds a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, and preservation of browser-created listings. No ratings or verified inventory are claimed. Cart/order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
+- Phase 2 commerce: the pushed discovery slice adds a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, and preservation of browser-created listings. The current local work adds a browser-persistent cart and clearly simulated checkout/order history. No ratings or verified inventory are claimed. Secure order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
 - Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
 
 ## Immediate next action

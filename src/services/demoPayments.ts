@@ -21,6 +21,8 @@ export type DemoPaymentResult = {
   reference: string
   status: 'SIMULATED'
   message: string
+  createdAt: string
+  timestamp: number
 }
 
 export async function createDemoPayment(request: DemoPaymentRequest): Promise<DemoPaymentResult> {
@@ -33,9 +35,12 @@ export async function createDemoPayment(request: DemoPaymentRequest): Promise<De
 
   await new Promise((resolve) => window.setTimeout(resolve, 450))
 
+  const timestamp = Date.now()
   return {
-    reference: `KC-DEMO-${Date.now().toString(36).toUpperCase()}`,
+    reference: `KC-DEMO-${timestamp.toString(36).toUpperCase()}`,
     status: 'SIMULATED',
     message: 'Demo only: no payment request was sent to a provider and no money was charged.',
+    createdAt: new Date(timestamp).toLocaleString(),
+    timestamp,
   }
 }

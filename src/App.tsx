@@ -77,6 +77,28 @@ type PaymentRecord = {
   status: 'SIMULATED'
 }
 
+type CartItem = {
+  productId: number
+  quantity: number
+}
+
+type OrderLine = {
+  productName: string
+  quantity: number
+  unit: string
+  unitPrice: number
+  lineTotal: number
+}
+
+type DemoOrderRecord = {
+  id: string
+  reference: string
+  lines: OrderLine[]
+  amount: number
+  createdAt: string
+  status: 'SIMULATED'
+}
+
 type AutomationRun = {
   id: string
   workflow: string
@@ -109,6 +131,8 @@ const quickPrompts = [
 
 const storageKeys = {
   products: 'kijiji-connect-products',
+  cart: 'kijiji-connect-demo-cart',
+  orders: 'kijiji-connect-demo-orders',
   drafts: 'kijiji-connect-drafts',
   posts: 'kijiji-connect-posts',
   lessons: 'kijiji-connect-completed-lessons',
@@ -378,6 +402,8 @@ function App() {
     setSearchParams(next, { replace: true })
   }
   const [products, setProducts] = useState<Product[]>(() => [...productsSeed, ...loadProducts()])
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => readStored(storageKeys.cart, []))
+  const [orderRecords, setOrderRecords] = useState<DemoOrderRecord[]>(() => readStored(storageKeys.orders, []))
   const [drafts, setDrafts] = useState<Draft[]>(() => readStored(storageKeys.drafts, []))
   const [posts, setPosts] = useState<CommunityPost[]>(() => readStored(storageKeys.posts, []))
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => readStored(storageKeys.lessons, []))
@@ -399,6 +425,7 @@ function App() {
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>(() => readStored(storageKeys.payments, []))
   const [automationRuns, setAutomationRuns] = useState<AutomationRun[]>(() => readStored(storageKeys.automations, []))
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null)
+  const [checkoutCart, setCheckoutCart] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<DemoPaymentMethodId>('mpesa')
   const [paymentPhone, setPaymentPhone] = useState('')
   const [paymentQuantity, setPaymentQuantity] = useState('1')
@@ -479,13 +506,22 @@ function App() {
   const visiblePage = Math.min(currentCatalogPage, pageCount)
   const visibleProducts = filteredProducts.slice((visiblePage - 1) * productsPerPage, visiblePage * productsPerPage)
 
+  const cartLines = cartItems.flatMap((item) => {
+    const product = products.find((candidate) => candidate.id === item.productId)
+    if (!product || !Number.isInteger(item.quantity) || item.quantity < 1) return []
+    const unitPrice = item.quantity >= product.minimumWholesaleQty ? product.wholesalePrice : product.price
+    return [{ product, quantity: item.quantity, unitPrice, lineTotal: unitPrice * item.quantity }]
+  })
+  const cartSubtotal = cartLines.reduce((total, line) => total + line.lineTotal, 0)
   const selectedPaymentMethod = demoPaymentMethods.find((method) => method.id === paymentMethod)
   const parsedQuantity = Number(paymentQuantity)
   const checkoutUnitPrice =
     checkoutProduct && parsedQuantity >= checkoutProduct.minimumWholesaleQty
       ? checkoutProduct.wholesalePrice
       : checkoutProduct?.price ?? 0
-  const checkoutTotal = checkoutUnitPrice * (Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0)
+  const checkoutTotal = checkoutCart
+    ? cartSubtotal
+    : checkoutUnitPrice * (Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0)
 
   const handleSendMessage = (messageText = chatInput) => {
     const trimmed = messageText.trim()
@@ -704,8 +740,11 @@ function App() {
   const handleRemoveProduct = (productId: number) => {
     setStorageError('')
     const nextProducts = products.filter((product) => product.id !== productId || !product.isDemoUserListing)
+    const nextCart = cartItems.filter((item) => item.productId !== productId)
     setProducts(nextProducts)
+    setCartItems(nextCart)
     persist(storageKeys.products, nextProducts)
+    persist(storageKeys.cart, nextCart)
   }
 
   const handleRemoveDraft = (draftId: number) => {
@@ -779,6 +818,7 @@ function App() {
   }
 
   const handleOpenCheckout = (product: Product) => {
+    setCheckoutCart(false)
     setCheckoutProduct(product)
     setPaymentMethod('mpesa')
     setPaymentPhone('')
@@ -786,18 +826,56 @@ function App() {
     setPaymentError('')
   }
 
+  const handleOpenCartCheckout = () => {
+    if (cartLines.length === 0) return
+    setCheckoutProduct(null)
+    setCheckoutCart(true)
+    setPaymentMethod('mpesa')
+    setPaymentPhone('')
+    setPaymentError('')
+  }
+
   const handleCloseCheckout = () => {
     if (paymentProcessing) return
     setCheckoutProduct(null)
+    setCheckoutCart(false)
     setPaymentError('')
+  }
+
+  const handleAddToCart = (product: Product) => {
+    const existing = cartItems.find((item) => item.productId === product.id)
+    const nextCart = existing
+      ? cartItems.map((item) => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item)
+      : [...cartItems, { productId: product.id, quantity: 1 }]
+    setCartItems(nextCart)
+    persist(storageKeys.cart, nextCart)
+  }
+
+  const handleUpdateCartQuantity = (productId: number, value: string) => {
+    const quantity = Number(value)
+    if (!Number.isInteger(quantity) || quantity < 1) return
+    const nextCart = cartItems.map((item) => item.productId === productId ? { ...item, quantity } : item)
+    setCartItems(nextCart)
+    persist(storageKeys.cart, nextCart)
+  }
+
+  const handleRemoveFromCart = (productId: number) => {
+    const nextCart = cartItems.filter((item) => item.productId !== productId)
+    setCartItems(nextCart)
+    persist(storageKeys.cart, nextCart)
+  }
+
+  const handleClearCart = () => {
+    setCartItems([])
+    persist(storageKeys.cart, [])
   }
 
   const handleSimulatePayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!checkoutProduct) return
+    if (!checkoutProduct && (!checkoutCart || cartLines.length === 0)) return
 
     const quantity = Number(paymentQuantity)
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    if (checkoutProduct && (!Number.isInteger(quantity) || quantity < 1)) {
       setPaymentError('Enter a whole-number quantity of at least 1.')
       return
     }
@@ -809,33 +887,66 @@ function App() {
     setPaymentError('')
     setPaymentProcessing(true)
     try {
+      const orderLines: OrderLine[] = checkoutCart
+        ? cartLines.map((line) => ({
+            productName: line.product.name,
+            quantity: line.quantity,
+            unit: line.product.unit,
+            unitPrice: line.unitPrice,
+            lineTotal: line.lineTotal,
+          }))
+        : checkoutProduct
+          ? [{
+              productName: checkoutProduct.name,
+              quantity,
+              unit: checkoutProduct.unit,
+              unitPrice: checkoutUnitPrice,
+              lineTotal: checkoutTotal,
+            }]
+          : []
+      const orderName = checkoutProduct?.name ?? `Cart (${orderLines.length} ${orderLines.length === 1 ? 'product' : 'products'})`
       const result = await createDemoPayment({
         method: paymentMethod,
         phone: paymentPhone.trim(),
         amount: checkoutTotal,
-        productName: checkoutProduct.name,
+        productName: orderName,
       })
       const record: PaymentRecord = {
         id: result.reference,
         reference: result.reference,
-        productName: checkoutProduct.name,
+        productName: orderName,
         amount: checkoutTotal,
         method: paymentMethod,
-        createdAt: new Date().toLocaleString(),
+        createdAt: result.createdAt,
+        status: result.status,
+      }
+      const orderRecord: DemoOrderRecord = {
+        id: result.reference,
+        reference: result.reference,
+        lines: orderLines,
+        amount: checkoutTotal,
+        createdAt: result.createdAt,
         status: result.status,
       }
       const nextPayments = [record, ...paymentRecords]
+      const nextOrders = [orderRecord, ...orderRecords]
       const notice: NotificationItem = {
-        id: Date.now() + 2,
-        title: 'Demo checkout simulated',
-        text: `${checkoutProduct.name}: ${result.message}`,
+        id: result.timestamp + 2,
+        title: 'Demo order recorded',
+        text: `${orderName}: ${result.message} No fulfilment or real payment is involved.`,
         time: 'Just now',
       }
       const nextNotifications = [notice, ...notifications]
       setPaymentRecords(nextPayments)
+      setOrderRecords(nextOrders)
       setNotifications(nextNotifications)
       persist(storageKeys.payments, nextPayments)
+      persist(storageKeys.orders, nextOrders)
       persist(storageKeys.notifications, nextNotifications)
+      if (checkoutCart) {
+        setCartItems([])
+        persist(storageKeys.cart, [])
+      }
       setPaymentError(result.message)
     } catch (error) {
       console.error('The demo payment simulation failed.', error)
@@ -1273,6 +1384,57 @@ function App() {
             </div>
           </div>
 
+          <section className="market-cart-panel" aria-labelledby="market-cart-title">
+            <div className="market-cart-heading">
+              <div>
+                <h3 id="market-cart-title">Your local demo cart</h3>
+                <p aria-live="polite">{cartLines.reduce((total, line) => total + line.quantity, 0)} items · saved only in this browser</p>
+              </div>
+              {cartLines.length > 0 && <button type="button" className="remove-listing" onClick={handleClearCart}>Empty cart</button>}
+            </div>
+            {cartLines.length === 0 ? (
+              <p className="empty-state">Add sample listings to prepare a sandbox checkout. Nothing is reserved or purchased.</p>
+            ) : (
+              <>
+                <div className="market-cart-items">
+                  {cartLines.map((line) => (
+                    <div key={line.product.id} className="market-cart-item">
+                      <div>
+                        <strong>{line.product.name}</strong>
+                        <small>{formatTzs(line.unitPrice)} per {line.product.unit} · illustrative price</small>
+                      </div>
+                      <label>
+                        Quantity
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          aria-label={`Quantity for ${line.product.name}`}
+                          value={line.quantity}
+                          onChange={(event) => handleUpdateCartQuantity(line.product.id, event.target.value)}
+                        />
+                      </label>
+                      <strong>{formatTzs(line.lineTotal)}</strong>
+                      <button
+                        type="button"
+                        className="remove-listing"
+                        aria-label={`Remove ${line.product.name} from cart`}
+                        onClick={() => handleRemoveFromCart(line.product.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="market-cart-total">
+                  <span>Illustrative subtotal</span>
+                  <strong>{formatTzs(cartSubtotal)}</strong>
+                  <button type="button" className="primary-button" onClick={handleOpenCartCheckout}>Review sandbox checkout</button>
+                </div>
+              </>
+            )}
+          </section>
+
           <div id="product-listing-form" className="listing-form-wrap">
             <h3>Publish a demo listing</h3>
             <p>Enter accurate details to add a listing in this browser. Listings are not visible to other users until a backend is connected.</p>
@@ -1338,6 +1500,16 @@ function App() {
                     </div>
                     <div className="seller-actions">
                       <a className="secondary-button contact-seller" href={whatsappUrl(`Hello, I am interested in ${product.name} from ${product.seller}. Please share availability and pricing.`)} target="_blank" rel="noreferrer">Ask about product</a>
+                      <button
+                        type="button"
+                        className="secondary-button add-to-cart-button"
+                        aria-label={`Add ${product.name} to cart`}
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        {cartItems.find((item) => item.productId === product.id)
+                          ? `Add another (${cartItems.find((item) => item.productId === product.id)?.quantity} in cart)`
+                          : 'Add to cart'}
+                      </button>
                       <button type="button" className="primary-button buy-button" onClick={() => handleOpenCheckout(product)}>Buy now</button>
                       {product.isDemoUserListing && <button type="button" className="remove-listing" onClick={() => handleRemoveProduct(product.id)}>Remove</button>}
                     </div>
@@ -1387,6 +1559,25 @@ function App() {
               </div>
             ))}
           </div>
+          <div className="payment-history">
+            <div className="payment-history-heading">
+              <div><h3>Local demo order log</h3><p>These records are checkout simulations only—not paid, confirmed, or fulfilled orders.</p></div>
+              <strong>{orderRecords.length} demo {orderRecords.length === 1 ? 'order' : 'orders'}</strong>
+            </div>
+            {orderRecords.length === 0 ? (
+              <p className="empty-state">Orders created through sandbox checkout will appear here.</p>
+            ) : orderRecords.slice(0, 10).map((order) => (
+              <div key={order.id} className="payment-record">
+                <div>
+                  <strong>{order.lines.map((line) => `${line.productName} × ${line.quantity}`).join(', ')}</strong>
+                  <small>{order.createdAt} · {order.lines.length} {order.lines.length === 1 ? 'product' : 'products'}</small>
+                </div>
+                <strong>{formatTzs(order.amount)}</strong>
+                <span className="payment-demo-tag">{order.status}</span>
+                <small>{order.reference}</small>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section id="notifications" data-route-page="activity" className="section-block">
@@ -1401,7 +1592,7 @@ function App() {
           <div className="section-heading"><div><span className="eyebrow">MY ACCOUNT · AUTHENTICATION SETUP</span><h2>{t.headings.account}</h2></div></div>
           <div className="account-grid">
             <SupabaseAuthPanel />
-            <article className="phase-card"><h3>Workspace activity</h3><ul className="activity-list"><li>Marketplace listings: {products.length}</li><li>Content drafts: {drafts.length}</li><li>Community posts: {posts.length}</li><li>Lessons completed: {completedLessons.length}</li></ul></article>
+            <article className="phase-card"><h3>Workspace activity</h3><ul className="activity-list"><li>Marketplace listings: {products.length}</li><li>Cart items: {cartLines.reduce((total, line) => total + line.quantity, 0)}</li><li>Demo order records: {orderRecords.length}</li><li>Content drafts: {drafts.length}</li><li>Community posts: {posts.length}</li><li>Lessons completed: {completedLessons.length}</li></ul></article>
           </div>
         </section>
 
@@ -1502,19 +1693,35 @@ function App() {
         </button>
       </aside>
 
-      {checkoutProduct && (
+      {(checkoutProduct || checkoutCart) && (
         <div className="checkout-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) handleCloseCheckout() }}>
           <section className="checkout-dialog" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
             <div className="checkout-heading">
-              <div><span className="eyebrow">Sandbox checkout</span><h2 id="checkout-title">Review your order</h2></div>
+              <div><span className="eyebrow">Sandbox checkout</span><h2 id="checkout-title">Review your demo order</h2></div>
               <button type="button" className="checkout-close" aria-label="Close checkout" onClick={handleCloseCheckout} disabled={paymentProcessing}>×</button>
             </div>
-            <div className="checkout-product"><div><strong>{checkoutProduct.name}</strong><small>{checkoutProduct.seller} · {checkoutProduct.location}</small></div><strong>{formatTzs(checkoutTotal)}</strong></div>
+            {checkoutProduct ? (
+              <div className="checkout-product"><div><strong>{checkoutProduct.name}</strong><small>{checkoutProduct.seller} · {checkoutProduct.location}</small></div><strong>{formatTzs(checkoutTotal)}</strong></div>
+            ) : (
+              <div className="checkout-cart-summary">
+                {cartLines.map((line) => (
+                  <div key={line.product.id} className="checkout-product">
+                    <div><strong>{line.product.name}</strong><small>{line.quantity} {line.product.unit} · {formatTzs(line.unitPrice)} each</small></div>
+                    <strong>{formatTzs(line.lineTotal)}</strong>
+                  </div>
+                ))}
+                <div className="checkout-product checkout-product-total"><strong>Illustrative subtotal</strong><strong>{formatTzs(checkoutTotal)}</strong></div>
+              </div>
+            )}
             <form className="checkout-form" onSubmit={handleSimulatePayment}>
-              <label>Quantity
-                <input type="number" min="1" step="1" required value={paymentQuantity} onChange={(event) => setPaymentQuantity(event.target.value)} />
-              </label>
-              <p className="checkout-price-note">{parsedQuantity >= checkoutProduct.minimumWholesaleQty ? `Wholesale price applies from ${checkoutProduct.minimumWholesaleQty} ${checkoutProduct.unit}.` : `Retail price: ${formatTzs(checkoutProduct.price)} per ${checkoutProduct.unit}.`}</p>
+              {checkoutProduct && (
+                <>
+                  <label>Quantity
+                    <input type="number" min="1" step="1" required value={paymentQuantity} onChange={(event) => setPaymentQuantity(event.target.value)} />
+                  </label>
+                  <p className="checkout-price-note">{parsedQuantity >= checkoutProduct.minimumWholesaleQty ? `Illustrative wholesale price applies from ${checkoutProduct.minimumWholesaleQty} ${checkoutProduct.unit}.` : `Illustrative retail price: ${formatTzs(checkoutProduct.price)} per ${checkoutProduct.unit}.`}</p>
+                </>
+              )}
               <fieldset className="payment-method-picker">
                 <legend>Choose a demo payment method</legend>
                 {demoPaymentMethods.map((method) => (

@@ -19,7 +19,7 @@ Last reviewed: 2026-10-28
 - Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, not-found rendering, and sample marketplace catalogue/filter behavior. Automated browser end-to-end coverage has not yet been added.
 - The route foundation maps existing modules to separate URLs, but most page contents remain mounted in the same application shell. Product detail, cart/order history, seller/admin, privacy, terms, FAQ and fully independent page components are not yet implemented.
 - The product catalogue contains more than 40 illustrative examples with placeholder prices and sample availability. Supplier inventory, ratings, and prices are not verified live data.
-- Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. Product details, cart, orders and server-persisted seller workflows remain unimplemented.
+- Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. A local cart and simulated order log exist; they are browser-local records, not real transactions. Product detail pages, secure order lifecycle and server-persisted seller workflows remain unimplemented.
 - No authorized payment, hotel, airline, tourism, messaging, email, or AI provider integration is configured.
 
 ## Quality and operations
