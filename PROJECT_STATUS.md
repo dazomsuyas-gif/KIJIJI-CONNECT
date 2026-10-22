@@ -21,7 +21,7 @@ Last reviewed: 2026-10-28
 - Latest automated test run: 33 tests passed across 5 files using Vitest and Testing Library.
 - `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
-- The Phase 2 marketplace catalogue and filter changes are currently local and uncommitted; preserve them.
+- Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
 - The existing Vite server on `http://localhost:5173/` remained available during final browser checks.
 - Browser-verified marketplace behavior before Phase 2: 6 initial sample listings; B2B and B2C each show 5; Electronics shows 1; a no-match search shows 0. A temporary local listing was added with the expected “Contact to confirm” stock state, then removed. The checkout required a mobile number and explicitly stated that it was simulation-only; no payment provider was contacted. Browser-local test data was restored afterward.
 - Browser-verified travel behavior: stay, flight and package tabs each show illustrative options; an Arusha stay enquiry generated review-only WhatsApp/email drafts and clearly stated that no reservation or message was made. The local itinerary builder produced a plan. Test data was restored afterward.
@@ -52,7 +52,7 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 ## Current phased implementation
 
 - Phase 1 foundation: complete and pushed in `2030566`; routed shell for existing sections, route metadata/title/404 support, Vercel fallback, responsive mobile navigation, theme and language preferences, initial shared storage adapter, and automated tests.
-- Phase 2 commerce: the pushed discovery slice adds a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, and preservation of browser-created listings. The current local work adds a browser-persistent cart and clearly simulated checkout/order history. No ratings or verified inventory are claimed. Secure order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
+- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, preservation of browser-created listings, and a browser-persistent cart with clearly simulated checkout/order history. No ratings or verified inventory are claimed. Secure order lifecycle, seller/admin workflow, and full service/repository integration remain to be built.
 - Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
 
 ## Immediate next action

@@ -45,7 +45,7 @@ npm run build
 
 Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, and the simulated cart/order workflow. End-to-end Playwright tests have not yet been added.
 
-The current route foundation displays the existing section-based modules at separate URLs; routes for product details, cart, orders, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
+The current route foundation displays the existing section-based modules at separate URLs. Cart and simulated-order history are local features within Marketplace and Payments, not independent server-backed routes. Product detail pages, secure order lifecycle, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
 
 ## Prototype limitations
 
