@@ -15,7 +15,7 @@ Last reviewed: 2026-10-28
 - Product and travel offers are illustrative demo catalog data and must not be described as verified supplier inventory.
 - Payment is simulated and cannot charge, settle, reconcile, or securely verify transactions.
 - Travel enquiries only prepare user-reviewed WhatsApp/email drafts; they do not contact providers, reserve inventory, or confirm a booking.
-- The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent.
+- The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent. It supports confirm/cancel and 30-second undo for local seller-owned price/stock changes, and can prepare a cart draft from a quantity request. The audit log is browser-local and not a security record. Broader typed tools, live model calls, and automatic handoff are not implemented.
 - Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, not-found rendering, and sample marketplace catalogue/filter behavior. Automated browser end-to-end coverage has not yet been added.
 - The app uses one shared shell; new standalone routes are lazy-loaded views within that shell rather than independent deployments. Seller/admin pages are safety-labeled previews only and are not protected workflows.
 - The product catalogue contains more than 40 illustrative examples with placeholder prices and sample availability. Supplier inventory, ratings, and prices are not verified live data.

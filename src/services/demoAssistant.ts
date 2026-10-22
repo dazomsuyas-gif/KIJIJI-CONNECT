@@ -12,9 +12,20 @@ export type AssistantSection =
   | 'notifications'
   | 'my-account'
 
+export type AssistantAuditEntry = {
+  id: number
+  productId: number
+  productName: string
+  action: string
+  createdAt: string
+}
+
 export type DemoAssistantIntent =
   | { type: 'navigate'; section: AssistantSection }
   | { type: 'search'; query: string }
+  | { type: 'set-price'; productQuery: string; price: number }
+  | { type: 'set-stock'; productQuery: string; stockQuantity: number }
+  | { type: 'order-draft'; productQuery: string; quantity: number; unit: string }
   | { type: 'draft'; title: string; kind: string; topic: string }
   | { type: 'prepare-listing'; productName: string }
   | { type: 'prepare-community-post'; title: string; room: string }
@@ -48,6 +59,39 @@ export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
     const match = (Object.entries(sectionAliases) as [AssistantSection, string[]][])
       .find(([, aliases]) => aliases.some((alias) => requestedSection.includes(alias)))
     if (match) return { type: 'navigate', section: match[0] }
+  }
+
+  const priceRequest = /^(?:please\s+)?(?:set|change|update)\s+(?:the\s+)?(?:retail\s+)?price\s+(?:of|for)\s+(.+?)\s+(?:to|at)\s+([\d,]+)(?:\s*(?:tsh|tzs))?[.!?]*$/i.exec(input.trim())
+  if (priceRequest) {
+    const price = Number(priceRequest[2].replaceAll(',', ''))
+    if (Number.isSafeInteger(price) && price > 0) {
+      return { type: 'set-price', productQuery: priceRequest[1].trim(), price }
+    }
+  }
+
+  const stockRequest = /^(?:please\s+)?(?:reduce|set|update|change)\s+(?:the\s+)?(?:(.+?)\s+stock|stock\s+(?:of|for)\s+(.+?))\s+(?:to|at)\s+([\d,]+)(?:\s+(?:bags?|kg|pieces?|units?))?[.!?]*$/i.exec(input.trim())
+  if (stockRequest) {
+    const stockQuantity = Number(stockRequest[3].replaceAll(',', ''))
+    if (Number.isSafeInteger(stockQuantity) && stockQuantity >= 0) {
+      return {
+        type: 'set-stock',
+        productQuery: (stockRequest[1] ?? stockRequest[2]).trim(),
+        stockQuantity,
+      }
+    }
+  }
+
+  const orderDraftRequest = /^order\s+(\d+)\s*(kg|kgs|bags?|pieces?|units?)\s+(.+?)[.!?]*$/i.exec(input.trim())
+  if (orderDraftRequest) {
+    const quantity = Number(orderDraftRequest[1])
+    if (Number.isSafeInteger(quantity) && quantity > 0) {
+      return {
+        type: 'order-draft',
+        quantity,
+        unit: orderDraftRequest[2].toLowerCase(),
+        productQuery: orderDraftRequest[3].trim(),
+      }
+    }
   }
 
   if (/\b(?:contact|support|help desk|email|whatsapp)\b/.test(normalized)) {

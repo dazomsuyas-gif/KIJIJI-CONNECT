@@ -12,7 +12,7 @@ import {
   demoPaymentMethods,
   type DemoPaymentMethodId,
 } from './services/demoPayments'
-import { resolveDemoAssistantIntent, type AssistantSection } from './services/demoAssistant'
+import { resolveDemoAssistantIntent, type AssistantAuditEntry, type AssistantSection } from './services/demoAssistant'
 import {
   languageCourses,
   type LearningLevelId,
@@ -26,6 +26,7 @@ import {
   deleteOwnedDemoProduct,
   localDemoSellerId,
   normalizeLocalListing,
+  restoreOwnedDemoProduct,
   updateOwnedDemoProduct,
   type LocalProductUpdate,
 } from './services/localMarketplaceRepository'
@@ -56,6 +57,29 @@ type Message = {
   text: string
   actions?: { label: string; href: string }[]
 }
+
+type AssistantChangeProposal =
+  | {
+    kind: 'listing-update'
+    id: number
+    productId: number
+    productName: string
+    before: Product
+    after: LocalProductUpdate
+  }
+  | {
+    kind: 'order-draft'
+    id: number
+    productId: number
+    productName: string
+    quantity: number
+    unit: string
+    previousQuantity: number | null
+  }
+
+type AssistantUndoAction =
+  | { kind: 'listing-update'; productName: string; before: Product; expiresAt: number }
+  | { kind: 'order-draft'; productId: number; productName: string; previousQuantity: number | null; expiresAt: number }
 
 type Draft = {
   id: number
@@ -152,6 +176,7 @@ const storageKeys = {
   payments: 'kijiji-connect-demo-payments',
   automations: 'kijiji-connect-demo-automation-runs',
   assistantMessages: 'kijiji-connect-assistant-messages',
+  assistantAudit: 'kijiji-connect-assistant-audit-log',
   travelRequests: 'kijiji-connect-travel-requests',
   lessonScores: 'kijiji-connect-language-scores',
   writingDrafts: 'kijiji-connect-language-writing',
@@ -207,6 +232,10 @@ function createLocalId() {
   return Date.now()
 }
 
+function createLocalTimestamp() {
+  return new Date().toISOString()
+}
+
 function readStored<T>(key: string, fallback: T): T {
   return storageRepository.read(key, fallback)
 }
@@ -223,24 +252,59 @@ function writeStored<T>(key: string, value: T): void {
   storageRepository.write(key, value)
 }
 
-function ChatTranscript({ messages }: { messages: Message[] }) {
+function ChatTranscript({
+  messages,
+  pendingChange,
+  undoAction,
+  onConfirmChange,
+  onCancelChange,
+  onUndoChange,
+}: {
+  messages: Message[]
+  pendingChange: AssistantChangeProposal | null
+  undoAction: AssistantUndoAction | null
+  onConfirmChange: () => void
+  onCancelChange: () => void
+  onUndoChange: () => void
+}) {
   return (
-    <div className="chat-window" aria-live="polite" aria-relevant="additions text">
-      {messages.map((message) => (
-        <div key={message.id} className={message.role === 'user' ? 'chat-bubble user' : 'chat-bubble assistant'}>
-          <p>{message.text}</p>
-          {message.actions && (
-            <div className="chat-message-actions">
-              {message.actions.map((action) => (
-                <a key={action.href} href={action.href} target="_blank" rel="noreferrer">
-                  {action.label}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="chat-window" aria-live="polite" aria-relevant="additions text">
+        {messages.map((message) => (
+          <div key={message.id} className={message.role === 'user' ? 'chat-bubble user' : 'chat-bubble assistant'}>
+            <p>{message.text}</p>
+            {message.actions && (
+              <div className="chat-message-actions">
+                {message.actions.map((action) => (
+                  <a key={action.href} href={action.href} target="_blank" rel="noreferrer">
+                    {action.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {pendingChange && (
+        <section className="assistant-change-card" role="group" aria-label="Confirm proposed action">
+          <strong>{pendingChange.kind === 'listing-update' ? 'Confirm local listing change' : 'Confirm demo order draft'}</strong>
+          <p>{pendingChange.productName}</p>
+          {pendingChange.kind === 'listing-update' && pendingChange.after.price !== undefined && <p>Price: {formatTzs(pendingChange.before.price)} → {formatTzs(pendingChange.after.price)}</p>}
+          {pendingChange.kind === 'listing-update' && pendingChange.after.stockQuantity !== undefined && <p>Sample stock: {pendingChange.before.stockQuantity ?? 'unrecorded'} → {pendingChange.after.stockQuantity}</p>}
+          {pendingChange.kind === 'order-draft' && <p>Requested quantity: {pendingChange.quantity} {pendingChange.unit}</p>}
+          <small>Nothing changes until you confirm. This only edits browser-local sample data; no supplier is contacted and no order is placed.</small>
+          <div className="assistant-change-actions">
+            <button type="button" className="primary-button" onClick={onConfirmChange}>Confirm change</button>
+            <button type="button" className="secondary-button" onClick={onCancelChange}>Cancel</button>
+          </div>
+        </section>
+      )}
+      {undoAction && (
+        <p className="assistant-undo-notice" role="status">
+          Local change saved. <button type="button" className="secondary-button" onClick={onUndoChange}>Undo within 30 seconds</button>
+        </p>
+      )}
+    </>
   )
 }
 
@@ -479,6 +543,16 @@ function App() {
   const [messages, setMessages] = useState<Message[]>(() =>
     readStored(storageKeys.assistantMessages, [assistantGreeting]),
   )
+  const [pendingAssistantChange, setPendingAssistantChange] = useState<AssistantChangeProposal | null>(null)
+  const [assistantUndoAction, setAssistantUndoAction] = useState<AssistantUndoAction | null>(null)
+  const [assistantAuditLog, setAssistantAuditLog] = useState<AssistantAuditEntry[]>(() =>
+    readStored(storageKeys.assistantAudit, []),
+  )
+  const assistantUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (assistantUndoTimerRef.current) clearTimeout(assistantUndoTimerRef.current)
+  }, [])
 
   const updateLanguage = (nextLanguage: AppLanguage) => {
     setLanguage(nextLanguage)
@@ -547,7 +621,7 @@ function App() {
     : null
   const routeProduct = products.find((product) => product.id === productIdFromPath)
   const supplierSlugFromPath = location.pathname.startsWith('/suppliers/')
-    ? decodeURIComponent(location.pathname.slice('/suppliers/'.length))
+    ? location.pathname.slice('/suppliers/'.length)
     : undefined
   const selectedPaymentMethod = demoPaymentMethods.find((method) => method.id === paymentMethod)
   const parsedQuantity = Number(paymentQuantity)
@@ -567,7 +641,60 @@ function App() {
     let reply = ''
     let actions: Message['actions']
 
-    if (intent.type === 'navigate') {
+    if (intent.type === 'set-price' || intent.type === 'set-stock') {
+      const normalizedQuery = intent.productQuery.toLowerCase()
+      const matchingProducts = products.filter((product) =>
+        product.name.toLowerCase().includes(normalizedQuery),
+      )
+      const product = matchingProducts.find((candidate) =>
+        candidate.isDemoUserListing && candidate.ownerId === localDemoSellerId,
+      ) ?? matchingProducts[0]
+
+      if (!product) {
+        reply = `I could not find a local listing matching “${intent.productQuery}”. No change was made.`
+      } else if (!product.isDemoUserListing || product.ownerId !== localDemoSellerId) {
+        reply = `${product.name} is sample catalogue data, not a listing owned by the local demo seller. Create your own local listing before changing its price or stock. No change was made.`
+      } else {
+        const after: LocalProductUpdate = intent.type === 'set-price'
+          ? { price: intent.price }
+          : { stockQuantity: intent.stockQuantity }
+        setPendingAssistantChange({
+          kind: 'listing-update',
+          id: createLocalId(),
+          productId: product.id,
+          productName: product.name,
+          before: product,
+          after,
+        })
+        reply = intent.type === 'set-price'
+          ? `I prepared a price change for ${product.name} to ${formatTzs(intent.price)}. Review the exact change and confirm or cancel it below.`
+          : `I prepared a sample stock change for ${product.name} to ${intent.stockQuantity}. Review the exact change and confirm or cancel it below.`
+      }
+    } else if (intent.type === 'order-draft') {
+      const normalizedQuery = intent.productQuery.toLowerCase()
+      const product = products.find((candidate) =>
+        candidate.name.toLowerCase().includes(normalizedQuery),
+      )
+      const requestedUnit = intent.unit.endsWith('s') ? intent.unit.slice(0, -1) : intent.unit
+      const productUnit = product?.unit.toLowerCase().replace(/s$/, '')
+      if (!product) {
+        reply = `I could not find a sample listing matching “${intent.productQuery}”. No cart or order was changed.`
+      } else if (requestedUnit !== productUnit) {
+        reply = `${product.name} is listed by ${product.unit}, not ${intent.unit}. No cart or order was changed; check the unit before asking again.`
+      } else {
+        const previousQuantity = cartItems.find((item) => item.productId === product.id)?.quantity ?? null
+        setPendingAssistantChange({
+          kind: 'order-draft',
+          id: createLocalId(),
+          productId: product.id,
+          productName: product.name,
+          quantity: intent.quantity,
+          unit: product.unit,
+          previousQuantity,
+        })
+        reply = `I prepared a ${intent.quantity} ${product.unit} cart draft for ${product.name}. Confirm or cancel it below; this is not an order, booking or payment.`
+      }
+    } else if (intent.type === 'navigate') {
       if (intent.section === 'travel-booking') {
         const lowerMessage = trimmed.toLowerCase()
         const category: TravelType = /\b(?:hotel|hotels|stay|stays|room|accommodation)\b/.test(lowerMessage)
@@ -694,6 +821,13 @@ function App() {
     setChatInput('')
   }
 
+  const handleClearAssistantChat = () => {
+    setMessages([assistantGreeting])
+    persist(storageKeys.assistantMessages, [assistantGreeting])
+    setPendingAssistantChange(null)
+    setChatInput('')
+  }
+
   const handleGenerateDraft = (details = draftForm): boolean => {
     const title = details.title.trim()
     const topic = details.topic.trim()
@@ -777,9 +911,10 @@ function App() {
   const handleUpdateOwnedProduct = (productId: number, update: LocalProductUpdate): boolean => {
     try {
       const nextProducts = updateOwnedDemoProduct(products, localDemoSellerId, productId, update)
-      setProducts(nextProducts)
       setStorageError('')
-      return persist(storageKeys.products, nextProducts)
+      if (!persist(storageKeys.products, nextProducts)) return false
+      setProducts(nextProducts)
+      return true
     } catch (error) {
       console.error('Could not update the local demo listing.', error)
       setStorageError(error instanceof Error ? error.message : 'Could not update this local demo listing.')
@@ -799,6 +934,91 @@ function App() {
     } catch (error) {
       console.error('Could not remove the local demo listing.', error)
       setStorageError(error instanceof Error ? error.message : 'Could not remove this local demo listing.')
+    }
+  }
+
+  const appendAssistantAuditEntry = (entry: AssistantAuditEntry) => {
+    const nextAuditLog = [entry, ...assistantAuditLog].slice(0, 100)
+    setAssistantAuditLog(nextAuditLog)
+    persist(storageKeys.assistantAudit, nextAuditLog)
+  }
+
+  const handleConfirmAssistantChange = () => {
+    if (!pendingAssistantChange) return
+    const proposal = pendingAssistantChange
+    let action: string
+    if (proposal.kind === 'listing-update') {
+      if (!handleUpdateOwnedProduct(proposal.productId, proposal.after)) return
+      action = [
+        proposal.after.price === undefined ? null : `price ${formatTzs(proposal.before.price)} to ${formatTzs(proposal.after.price)}`,
+        proposal.after.stockQuantity === undefined ? null : `stock ${proposal.before.stockQuantity ?? 'unrecorded'} to ${proposal.after.stockQuantity}`,
+      ].filter(Boolean).join('; ')
+    } else {
+      if (!handleUpdateCartQuantity(proposal.productId, String(proposal.quantity))) return
+      action = `prepared a cart draft for ${proposal.quantity} ${proposal.unit}; no order was placed`
+    }
+    appendAssistantAuditEntry({
+      id: proposal.id,
+      productId: proposal.productId,
+      productName: proposal.productName,
+      action,
+      createdAt: createLocalTimestamp(),
+    })
+    setPendingAssistantChange(null)
+    const expiresAt = createLocalId() + 30_000
+    setAssistantUndoAction(proposal.kind === 'listing-update'
+      ? { kind: 'listing-update', productName: proposal.productName, before: proposal.before, expiresAt }
+      : { kind: 'order-draft', productId: proposal.productId, productName: proposal.productName, previousQuantity: proposal.previousQuantity, expiresAt })
+    if (assistantUndoTimerRef.current) clearTimeout(assistantUndoTimerRef.current)
+    assistantUndoTimerRef.current = setTimeout(() => {
+      setAssistantUndoAction(null)
+      assistantUndoTimerRef.current = null
+    }, 30_000)
+  }
+
+  const handleCancelAssistantChange = () => {
+    setPendingAssistantChange(null)
+  }
+
+  const handleUndoAssistantChange = () => {
+    if (!assistantUndoAction) return
+    if (Date.now() > assistantUndoAction.expiresAt) {
+      setAssistantUndoAction(null)
+      return
+    }
+    try {
+      setStorageError('')
+      if (assistantUndoAction.kind === 'listing-update') {
+        const nextProducts = restoreOwnedDemoProduct(products, localDemoSellerId, assistantUndoAction.before)
+        if (!persist(storageKeys.products, nextProducts)) return
+        setProducts(nextProducts)
+      } else {
+        const previousQuantity = assistantUndoAction.previousQuantity
+        const nextCart = previousQuantity === null
+          ? cartItems.filter((item) => item.productId !== assistantUndoAction.productId)
+          : cartItems.map((item) => item.productId === assistantUndoAction.productId
+            ? { ...item, quantity: previousQuantity }
+            : item)
+        if (!persist(storageKeys.cart, nextCart)) return
+        setCartItems(nextCart)
+      }
+      appendAssistantAuditEntry({
+        id: createLocalId(),
+        productId: assistantUndoAction.kind === 'listing-update'
+          ? assistantUndoAction.before.id
+          : assistantUndoAction.productId,
+        productName: assistantUndoAction.productName,
+        action: 'undid the previous local assistant change',
+        createdAt: createLocalTimestamp(),
+      })
+      setAssistantUndoAction(null)
+      if (assistantUndoTimerRef.current) {
+        clearTimeout(assistantUndoTimerRef.current)
+        assistantUndoTimerRef.current = null
+      }
+    } catch (error) {
+      console.error('Could not undo the local assistant change.', error)
+      setStorageError(error instanceof Error ? error.message : 'Could not undo the local assistant change.')
     }
   }
 
@@ -906,12 +1126,17 @@ function App() {
     persist(storageKeys.cart, nextCart)
   }
 
-  const handleUpdateCartQuantity = (productId: number, value: string) => {
+  const handleUpdateCartQuantity = (productId: number, value: string): boolean => {
     const quantity = Number(value)
-    if (!Number.isInteger(quantity) || quantity < 1) return
-    const nextCart = cartItems.map((item) => item.productId === productId ? { ...item, quantity } : item)
+    if (!Number.isInteger(quantity) || quantity < 1) return false
+    const existing = cartItems.some((item) => item.productId === productId)
+    const nextCart = existing
+      ? cartItems.map((item) => item.productId === productId ? { ...item, quantity } : item)
+      : [...cartItems, { productId, quantity }]
+    setStorageError('')
+    if (!persist(storageKeys.cart, nextCart)) return false
     setCartItems(nextCart)
-    persist(storageKeys.cart, nextCart)
+    return true
   }
 
   const handleRemoveFromCart = (productId: number) => {
@@ -1122,6 +1347,7 @@ function App() {
               onCheckout={handleOpenCartCheckout}
               onUpdateProduct={handleUpdateOwnedProduct}
               onDeleteProduct={handleRemoveProduct}
+              assistantAuditLog={assistantAuditLog}
             />
           </Suspense>
         )}
@@ -1338,7 +1564,14 @@ function App() {
 
           <div className="assistant-layout">
             <div className="assistant-panel">
-              <ChatTranscript messages={messages} />
+              <ChatTranscript
+                messages={messages}
+                pendingChange={pendingAssistantChange}
+                undoAction={assistantUndoAction}
+                onConfirmChange={handleConfirmAssistantChange}
+                onCancelChange={handleCancelAssistantChange}
+                onUndoChange={handleUndoAssistantChange}
+              />
 
               <div className="chat-input-row">
                 <input
@@ -1740,9 +1973,19 @@ function App() {
                 <strong>Kijiji Connect assistant</strong>
                 <span>Guided help · local demo</span>
               </div>
-              <button type="button" className="ghost-button small" aria-label="Close assistant" onClick={() => setAssistantOpen(false)}>Close</button>
+              <div className="assistant-widget__heading-actions">
+                <button type="button" className="ghost-button small" onClick={handleClearAssistantChat}>Clear chat</button>
+                <button type="button" className="ghost-button small" aria-label="Close assistant" onClick={() => setAssistantOpen(false)}>Close</button>
+              </div>
             </div>
-            <ChatTranscript messages={messages} />
+            <ChatTranscript
+              messages={messages}
+              pendingChange={pendingAssistantChange}
+              undoAction={assistantUndoAction}
+              onConfirmChange={handleConfirmAssistantChange}
+              onCancelChange={handleCancelAssistantChange}
+              onUndoChange={handleUndoAssistantChange}
+            />
             <form className="chat-input-row assistant-widget__form" onSubmit={(event) => { event.preventDefault(); handleSendMessage() }}>
               <input
                 value={chatInput}

@@ -15,4 +15,32 @@ describe('local assistant marketplace routing', () => {
       section: 'travel-booking',
     })
   })
+
+  it('parses safe product price and stock proposals without applying them', () => {
+    expect(resolveDemoAssistantIntent('Set price of Fresh Avocado to 4,500 TZS')).toEqual({
+      type: 'set-price',
+      productQuery: 'Fresh Avocado',
+      price: 4500,
+    })
+    expect(resolveDemoAssistantIntent('Reduce cement stock to 20 bags')).toEqual({
+      type: 'set-stock',
+      productQuery: 'cement',
+      stockQuantity: 20,
+    })
+    expect(resolveDemoAssistantIntent('Set stock of cement to 20 bags')).toEqual({
+      type: 'set-stock',
+      productQuery: 'cement',
+      stockQuantity: 20,
+    })
+    expect(resolveDemoAssistantIntent('Set price of maize to zero')).toEqual({ type: 'help' })
+  })
+
+  it('parses an order request as a quantity-bearing draft proposal', () => {
+    expect(resolveDemoAssistantIntent('Order 50kg avocado')).toEqual({
+      type: 'order-draft',
+      productQuery: 'avocado',
+      quantity: 50,
+      unit: 'kg',
+    })
+  })
 })

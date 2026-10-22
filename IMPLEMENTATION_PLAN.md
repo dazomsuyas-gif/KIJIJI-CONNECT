@@ -29,10 +29,12 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 ## Phase 3 — Assistant tools with safe confirmation
 
-- [ ] Define AI provider interface and typed tool contracts; English/Kiswahili rule-based provider.
+- [x] Parse local price/stock requests into typed intent contracts; the assistant remains rule-based.
+- [ ] Define a swappable AI provider interface and expand English/Kiswahili intent coverage.
 - [ ] Implement safe tools for products, order drafts, seller changes, quotes, travel, lessons, tickets and human handoff.
-- [ ] Add confirmation before state changes, exact-change preview, local audit log and a reliable 30-second undo.
-- [ ] Add persistent chat, quick replies, typing state and clear history.
+- [x] For seller-owned local price/stock edits, require confirmation, show exact before/after values, write a browser-local audit entry and offer 30-second undo.
+- [x] Convert explicit quantity requests into a confirmed local cart draft; confirmation does not create an order or payment.
+- [x] Keep chat history in browser storage, provide quick prompts and a clear-history control; typing state remains.
 - [ ] Handoff prepares user-reviewed WhatsApp/email links only; it never sends automatically.
 - [ ] Test the requested commands and permission/confirmation edge cases.
 - [blocked] Live LLM/WhatsApp messaging requires approved server deployment, provider account, secrets and provider-side tests.

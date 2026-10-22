@@ -1,3 +1,5 @@
+# NEXT PHASE: Complete remaining seller/admin marketplace workflows (Phase 2)
+
 # Kijiji Connect project status
 
 Last reviewed: 2026-10-28
@@ -16,10 +18,10 @@ Last reviewed: 2026-10-28
 
 ## Verified state
 
-- Latest production build and TypeScript check after route-foundation work: passed with `npm run build`; the Supabase client remains split from the initial bundle and standalone pages are in a separate lazy chunk.
+- Latest production build and TypeScript check: passed with `npm run build`; standalone pages remain in a separate lazy chunk.
 - Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 51 tests passed across 7 files using Vitest and Testing Library.
-- `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
+- Latest automated test run: 56 tests passed across 7 files using Vitest and Testing Library.
+- Latest `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
 - Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
 - The existing Vite server on `http://localhost:5173/` remained available during final browser checks.
@@ -32,6 +34,9 @@ Last reviewed: 2026-10-28
 - Router browser checks: direct `/marketplace` loads and survives refresh; route-specific page section and title render; navigation and browser back work; unknown paths show a 404 page; Kiswahili navigation/headings and dark-theme preference persist; mobile menu opens at 390px without horizontal overflow.
 - Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the local cart recalculates wholesale pricing at MOQ, persists across refresh, and creates only a `SIMULATED` order record after the clearly labelled sandbox step. The cart clears after the simulation. Hotel intent still transfers to travel. At 390px marketplace/cart views have no horizontal overflow. No browser console errors, page errors, or failed requests were observed during successful checks.
 - Current route-foundation browser checks: product details and supplier profiles show explicitly unverified sample data; quote handoff is a user-directed WhatsApp link, not an automated send. A real click added a product to the browser-local cart, and the header cart link displayed the item and indicative subtotal. The footer Orders link reached the honest empty demo-order view. Mobile navigation opened at 320px; unknown paths render the 404 page. Document scroll width matched the 320px viewport.
+- Seller workflow browser checks: created a local listing, edited its price and stock, then deleted it; temporary test data was removed.
+- Assistant browser checks: price/stock changes remained pending until confirmed, showed exact before/after values, appeared in the local audit log, and were reverted with Undo. A quantity request created only a confirmed local cart draft; Undo cleared it. Temporary test state was removed.
+- Local server check: `http://localhost:5173/` returned HTTP 200 and remained owned by the existing Vite process (PID 21676) after verification.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
 - The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
 - Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
@@ -47,18 +52,19 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 - Marketplace, community, notifications, learning progress, and enquiry records use browser-local/demo state rather than shared persistent records.
 - Payment flows are simulations; no provider receives a payment request.
 - Travel catalog and prices are illustrative; enquiries are not bookings or confirmations.
-- The assistant uses local intent matching and does not call an AI model or WhatsApp Business API.
+- The assistant uses local intent matching and does not call an AI model or WhatsApp Business API. It can prepare seller-owned local listing price/stock changes; a user must confirm the exact change before it is persisted, and a local audit entry plus 30-second undo are provided.
 - Supabase authentication UI and client calls are implemented but cannot be exercised until project settings are configured. There is no verified authenticated session, role authorization, server-side order processing, or administrator dashboard.
 
 ## Current phased implementation
 
 - Phase 1 foundation: original shell was pushed in `2030566`; direct product/supplier/cart/order/seller/admin/assistant/editorial/legal routes, lazy standalone pages, an ErrorBoundary, tests, footer sitemap, and product-to-supplier/cart navigation were pushed in `988c015`.
 - Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced filters/sorting/pagination, a browser-persistent cart, and clearly simulated checkout/order history. The local seller workflow adds a browser-local listing repository with owner checks, validated price/stock edits, deletion confirmation and low-stock alerts. A real browser workflow created, edited and deleted a sample listing; the stock alert updated and test data was removed afterward. This owner check is editable browser data, not real authorization. Image gallery, secure order lifecycle, seller order/sales views, moderation, and server-backed repository integration remain to be built.
-- Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
+- Phase 3 assistant progress: typed local intents recognize price/stock changes for a listing owned by the browser-local demo seller and quantity requests such as “Order 50kg avocado”. Listing changes show exact values and remain unchanged until confirmation; quantity requests create only a confirmed cart draft, never an order. Confirmed changes write a browser-local audit entry and offer a 30-second Undo. Browser checks verified pre-confirmation state, confirmation, audit persistence and undo; clear-chat resets the saved conversation while retaining its greeting. Temporary test listing and generated audit entries were removed. This is not live AI or secure authorization. Other tools, handoff tickets and typing state remain unimplemented.
+- Remaining work across phases 2–7 includes image gallery, secure order workflow, seller/admin processes, broader agent tools and academy content, fuller travel offers, schema-reviewed optional integrations, CI/E2E/SEO/PWA and licensed image optimization.
 
 ## Immediate next action
 
-Continue with the remaining local marketplace service/seller/admin workflows. Supabase remains optional; before proposing migrations, the intended remote project must be identified and its existing schema and RLS policies reviewed using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data. locally, never a service-role key.
+Continue with remaining Phase 2 seller/admin workflows, then proceed to the incomplete phases. Supabase remains optional; before proposing migrations, identify the intended remote project and review its existing schema and RLS policies using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data; never put a service-role key in the browser.
 
 ## Files changed by the latest implementation cycle
 

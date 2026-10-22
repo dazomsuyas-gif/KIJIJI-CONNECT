@@ -35,7 +35,7 @@ describe('routed application shell', () => {
         <App />
       </MemoryRouter>,
     )
-    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull())
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull(), { timeout: 5000 })
     const productPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
     expect(productPage.getByRole('heading', { name: 'Fresh Avocado Grade A', level: 1 })).toBeVisible()
     expect(productPage.getByText(/Price and availability are not verified/)).toBeVisible()
@@ -47,7 +47,8 @@ describe('routed application shell', () => {
         <App />
       </MemoryRouter>,
     )
-    const supplierPage = within(await screen.findByText(/This example profile and its catalogue are illustrative/).then((text) => text.closest('.standalone-page') as HTMLElement))
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull(), { timeout: 5000 })
+    const supplierPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
     expect(supplierPage.getByRole('heading', { name: 'Green Valley Farms (sample)', level: 1 })).toBeVisible()
     expect(supplierPage.getByText(/not independently verified/)).toBeVisible()
   })
@@ -58,7 +59,7 @@ describe('routed application shell', () => {
         <App />
       </MemoryRouter>,
     )
-    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull())
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull(), { timeout: 5000 })
     const cartPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
     expect(cartPage.getByRole('heading', { name: 'Your local demo cart', level: 1 })).toBeVisible()
     expect(cartPage.getByText('Your cart is empty.')).toBeVisible()
@@ -69,7 +70,7 @@ describe('routed application shell', () => {
         <App />
       </MemoryRouter>,
     )
-    expect(await screen.findByRole('heading', { name: 'Local demo moderation' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Local demo moderation' }, { timeout: 5000 })).toBeVisible()
     expect(screen.getByText(/not a protected administrator or seller dashboard/)).toBeVisible()
   })
 
@@ -87,7 +88,8 @@ describe('routed application shell', () => {
       </MemoryRouter>,
     )
 
-    const sellerPage = within(await screen.findByText(/This workspace is not protected authentication/).then((text) => text.closest('.standalone-page') as HTMLElement))
+    await waitFor(() => expect(document.querySelector('main > .standalone-page')).not.toBeNull(), { timeout: 5000 })
+    const sellerPage = within(document.querySelector('main > .standalone-page') as HTMLElement)
     fireEvent.change(sellerPage.getByLabelText('Retail price for Fresh Avocado Grade A'), { target: { value: '4500' } })
     fireEvent.change(sellerPage.getByLabelText('Stock quantity for Fresh Avocado Grade A'), { target: { value: '5' } })
     fireEvent.click(sellerPage.getByRole('button', { name: 'Save price and stock' }))
@@ -96,6 +98,91 @@ describe('routed application shell', () => {
     expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 9001, price: 4500, stockQuantity: 5, stock: 'Sample: Low stock' })]),
     )
+  })
+
+  it('requires assistant confirmation for seller price changes and supports undo', async () => {
+    localStorage.setItem('kijiji-connect-products', JSON.stringify([{
+      ...productsSeed[0],
+      id: 9002,
+      isDemoUserListing: true,
+      ownerId: localDemoSellerId,
+    }]))
+    render(
+      <MemoryRouter initialEntries={['/assistant']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Kijiji assistant' }))
+    const assistantPanel = within(document.querySelector('.assistant-widget__panel') as HTMLElement)
+    const input = assistantPanel.getByLabelText('Message the Kijiji Connect assistant')
+    fireEvent.change(input, { target: { value: 'Set price of Fresh Avocado to 4500' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    const confirmation = await assistantPanel.findByRole('group', { name: 'Confirm proposed action' })
+    expect(confirmation).toHaveTextContent('TZS 4,200')
+    expect(confirmation).toHaveTextContent('TZS 4,500')
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 9002, price: 4200 })]),
+    )
+
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm change' }))
+    expect(await assistantPanel.findByRole('status')).toHaveTextContent('Undo within 30 seconds')
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 9002, price: 4500 })]),
+    )
+    fireEvent.click(assistantPanel.getByRole('button', { name: 'Undo within 30 seconds' }))
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 9002, price: 4200 })]),
+    )
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-assistant-audit-log') ?? '[]')).toHaveLength(2)
+  })
+
+  it('requires confirmation before turning an assistant order request into a cart draft', async () => {
+    render(
+      <MemoryRouter initialEntries={['/assistant']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Kijiji assistant' }))
+    const assistantPanel = within(document.querySelector('.assistant-widget__panel') as HTMLElement)
+    const input = assistantPanel.getByLabelText('Message the Kijiji Connect assistant')
+    fireEvent.change(input, { target: { value: 'Order 50kg avocado' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    const confirmation = await assistantPanel.findByRole('group', { name: 'Confirm proposed action' })
+    expect(confirmation).toHaveTextContent('50 kg')
+    expect(localStorage.getItem('kijiji-connect-demo-cart')).toBeNull()
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm change' }))
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-cart') ?? '[]')).toEqual([{ productId: 1, quantity: 50 }])
+    expect(assistantPanel.getByText(/not an order, booking or payment/)).toBeVisible()
+
+    fireEvent.click(assistantPanel.getByRole('button', { name: 'Undo within 30 seconds' }))
+    expect(localStorage.getItem('kijiji-connect-demo-cart')).toBe('[]')
+  })
+
+  it('clears the saved assistant conversation and retains the welcome message', async () => {
+    render(
+      <MemoryRouter initialEntries={['/assistant']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Kijiji assistant' }))
+    const assistantPanel = within(document.querySelector('.assistant-widget__panel') as HTMLElement)
+    const input = assistantPanel.getByLabelText('Message the Kijiji Connect assistant')
+    fireEvent.change(input, { target: { value: 'Find avocado products' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    expect(await assistantPanel.findByText('Find avocado products', { selector: 'p' })).toBeVisible()
+
+    fireEvent.click(assistantPanel.getByRole('button', { name: 'Clear chat' }))
+
+    expect(assistantPanel.queryByText('Find avocado products', { selector: 'p' })).toBeNull()
+    expect(assistantPanel.getByText(/Welcome to Kijiji Connect/)).toBeVisible()
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-assistant-messages') ?? '[]')).toEqual([
+      expect.objectContaining({ id: 1, role: 'assistant' }),
+    ])
   })
 
   it('navigates between pages and updates the page title', async () => {

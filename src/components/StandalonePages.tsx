@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import type { Product } from '../services/marketplaceCatalog'
+import type { AssistantAuditEntry } from '../services/demoAssistant'
 import { businessContact } from '../config/contact'
 import { localDemoSellerId, type LocalProductUpdate } from '../services/localMarketplaceRepository'
 
@@ -48,6 +49,7 @@ type StandalonePagesProps = {
   onCheckout: () => void
   onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
   onDeleteProduct: (productId: number) => void
+  assistantAuditLog: AssistantAuditEntry[]
 }
 
 const price = (amount: number) => new Intl.NumberFormat('en-TZ', {
@@ -193,7 +195,7 @@ function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct }:
 }
 
 export function StandalonePages(props: StandalonePagesProps) {
-  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout, onUpdateProduct, onDeleteProduct } = props
+  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout, onUpdateProduct, onDeleteProduct, assistantAuditLog } = props
 
   if (page === 'product-detail') return <ProductDetail product={product} products={products} onAddToCart={onAddToCart} />
 
@@ -259,13 +261,14 @@ export function StandalonePages(props: StandalonePagesProps) {
         <div className="phase-list">
           <article className="phase-card"><h2>Sample listings to review</h2><p>Moderation actions are not enabled because this demo has no trusted user identity or server-side authorization.</p><Link className="primary-button" to="/marketplace">Browse sample catalogue</Link></article>
           <article className="phase-card"><h2>Order records</h2><p>{orders.length} local simulated records. No customer purchase or fulfilment is represented.</p><Link to="/orders">View demo order history</Link></article>
+          <article className="phase-card"><h2>Local assistant audit log</h2><p>Confirmed assistant listing changes in this browser only; this is not a security audit trail.</p>{assistantAuditLog.length === 0 ? <p className="empty-state">No confirmed assistant changes yet.</p> : <ol>{assistantAuditLog.map((entry) => <li key={entry.id}>{entry.createdAt} · {entry.productName}: {entry.action}</li>)}</ol>}</article>
         </div>
       </PageSection>
     )
   }
 
   if (page === 'assistant') {
-    return <PageSection title="Guided assistant" eyebrow="Local rules · not a connected AI model"><p>Use the assistant launcher at the bottom of the page. It can search sample listings, prepare local forms and open travel guidance. It does not send messages, change verified prices or complete real orders.</p><p>Try: “Find avocado products” or “Find a hotel in Arusha for 2 nights”.</p></PageSection>
+    return <PageSection title="Guided assistant" eyebrow="Local rules · not a connected AI model"><p>Use the assistant launcher at the bottom of the page. It can search sample listings, prepare local forms and open travel guidance. It does not send messages, change verified prices or complete real orders.</p><p>Try “Order 50kg avocado” to prepare a cart draft that requires confirmation, or set price/stock for a listing you created in the local Seller workspace. Price and stock changes require confirmation and offer a short undo window.</p><p>Travel: “Find a hotel in Arusha for 2 nights”. No live availability, external AI or messages are connected.</p></PageSection>
   }
 
   if (page === 'articles') {
