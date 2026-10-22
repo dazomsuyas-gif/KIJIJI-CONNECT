@@ -15,6 +15,8 @@ export type Product = {
   stock: string
   image: string
   isDemoUserListing?: boolean
+  ownerId?: string
+  stockQuantity?: number
 }
 
 export const marketplaceCategories = [

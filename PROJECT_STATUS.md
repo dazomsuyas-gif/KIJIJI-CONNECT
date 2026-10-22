@@ -18,7 +18,7 @@ Last reviewed: 2026-10-28
 
 - Latest production build and TypeScript check after route-foundation work: passed with `npm run build`; the Supabase client remains split from the initial bundle and standalone pages are in a separate lazy chunk.
 - Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 47 tests passed across 6 files using Vitest and Testing Library.
+- Latest automated test run: 51 tests passed across 7 files using Vitest and Testing Library.
 - `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
 - Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
@@ -52,8 +52,8 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 
 ## Current phased implementation
 
-- Phase 1 foundation: original shell was pushed in `2030566`; current local changes add direct product/supplier/cart/order/seller/admin/assistant/editorial/legal routes, a lazy standalone-page module, ErrorBoundary, route tests, footer sitemap, and product-to-supplier/cart navigation. These latest route-foundation changes are not yet committed or pushed.
-- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced search/audience/category/location/price/availability/sort filters, 12-item pagination, empty state, preservation of browser-created listings, and a browser-persistent cart with clearly simulated checkout/order history. Current local changes add basic sample product details/specifications/related products, supplier profiles, and an enquiry-only quote link. No ratings or verified inventory are claimed. Image gallery, secure order lifecycle, seller/admin workflows, and full service/repository integration remain to be built.
+- Phase 1 foundation: original shell was pushed in `2030566`; direct product/supplier/cart/order/seller/admin/assistant/editorial/legal routes, lazy standalone pages, an ErrorBoundary, tests, footer sitemap, and product-to-supplier/cart navigation were pushed in `988c015`.
+- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced filters/sorting/pagination, a browser-persistent cart, and clearly simulated checkout/order history. Current local changes add a browser-local listing repository with owner checks, validated price/stock edits, deletion confirmation and low-stock alerts. A real browser workflow created, edited and deleted a sample listing; the stock alert updated and test data was removed afterward. This owner check is editable browser data, not real authorization. Image gallery, secure order lifecycle, seller order/sales views, moderation, and server-backed repository integration remain to be built.
 - Phases 3–7 (agent-style assistant, full academy, richer travel, reviewed backend/API skeletons, end-to-end tests/SEO/PWA/CI) remain pending.
 
 ## Immediate next action

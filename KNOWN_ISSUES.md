@@ -20,6 +20,7 @@ Last reviewed: 2026-10-28
 - The app uses one shared shell; new standalone routes are lazy-loaded views within that shell rather than independent deployments. Seller/admin pages are safety-labeled previews only and are not protected workflows.
 - The product catalogue contains more than 40 illustrative examples with placeholder prices and sample availability. Supplier inventory, ratings, and prices are not verified live data.
 - Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. Product detail/specifications, related products, supplier sample profiles, enquiry-only quote links, local cart and simulated order history are available. These are browser-local previews, not real transactions or verified inventory. Product image gallery, secure order lifecycle and server-persisted seller workflows remain unimplemented.
+- The seller preview can create, update and remove browser-local listings and displays low sample stock, but ownership is a client-side demo check, not authentication or security. Image previews, real seller accounts, sales analytics and seller order management are not implemented.
 - No authorized payment, hotel, airline, tourism, messaging, email, or AI provider integration is configured.
 
 ## Quality and operations

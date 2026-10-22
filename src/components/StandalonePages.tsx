@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import type { Product } from '../services/marketplaceCatalog'
 import { businessContact } from '../config/contact'
+import { localDemoSellerId, type LocalProductUpdate } from '../services/localMarketplaceRepository'
 
 export type StandalonePageId =
   | 'product-detail'
@@ -45,6 +46,8 @@ type StandalonePagesProps = {
   onUpdateCartQuantity: (productId: number, quantity: string) => void
   onRemoveFromCart: (productId: number) => void
   onCheckout: () => void
+  onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
+  onDeleteProduct: (productId: number) => void
 }
 
 const price = (amount: number) => new Intl.NumberFormat('en-TZ', {
@@ -115,8 +118,82 @@ function PageSection({ title, eyebrow = 'Kijiji Connect', children }: { title: s
   return <section className="section-block standalone-page"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1>{children}</section>
 }
 
+function SellerListingEditor({ product, onUpdate, onDelete }: {
+  product: Product
+  onUpdate: (productId: number, update: LocalProductUpdate) => boolean
+  onDelete: (productId: number) => void
+}) {
+  const [priceInput, setPriceInput] = useState(String(product.price))
+  const [stockInput, setStockInput] = useState(product.stockQuantity === undefined ? '' : String(product.stockQuantity))
+  const [message, setMessage] = useState('')
+
+  const save = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const priceValue = Number(priceInput)
+    const stockValue = Number(stockInput)
+    if (!Number.isSafeInteger(priceValue) || priceValue < 1 || !Number.isSafeInteger(stockValue) || stockValue < 0) {
+      setMessage('Enter a positive whole-number price and a whole-number stock quantity of zero or more.')
+      return
+    }
+    setMessage(onUpdate(product.id, { price: priceValue, stockQuantity: stockValue })
+      ? 'Price and sample stock saved in this browser only.'
+      : 'The local listing could not be updated. Review the error notice and try again.')
+  }
+
+  return (
+    <article className="phase-card seller-listing-editor">
+      <div className="section-heading">
+        <div><h2>{product.name}</h2><p>{product.category} · {product.location}</p></div>
+        {product.stockQuantity !== undefined && product.stockQuantity <= 5 && <span className="badge badge--gold">Low sample stock</span>}
+      </div>
+      <p className="phase-note">Sample prices and inventory are not published to other users or verified with a supplier.</p>
+      <form className="seller-edit-form" onSubmit={save}>
+        <label>Indicative retail price (TZS)<input aria-label={`Retail price for ${product.name}`} required type="number" min="1" step="1" value={priceInput} onChange={(event) => setPriceInput(event.target.value)} /></label>
+        <label>Sample stock quantity<input aria-label={`Stock quantity for ${product.name}`} required type="number" min="0" step="1" value={stockInput} onChange={(event) => setStockInput(event.target.value)} /></label>
+        <button className="primary-button" type="submit">Save price and stock</button>
+        <button className="remove-listing" type="button" onClick={() => {
+          if (window.confirm(`Remove the local demo listing “${product.name}”?`)) onDelete(product.id)
+        }}>Remove listing</button>
+      </form>
+      {message && <p role="status">{message}</p>}
+    </article>
+  )
+}
+
+function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct }: {
+  products: Product[]
+  orders: StandaloneOrder[]
+  onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
+  onDeleteProduct: (productId: number) => void
+}) {
+  const ownListings = products.filter((product) =>
+    product.isDemoUserListing && product.ownerId === localDemoSellerId,
+  )
+  const lowStockCount = ownListings.filter((product) =>
+    product.stockQuantity !== undefined && product.stockQuantity <= 5,
+  ).length
+
+  return (
+    <PageSection title="Seller workspace" eyebrow="Sandbox only · browser-local seller preview">
+      <p className="phase-note">This workspace is not protected authentication or a real seller dashboard. Its local owner check is editable in browser data and must never be used to authorize a real account.</p>
+      <div className="phase-list">
+        <article className="phase-card"><h2>Your sample listings</h2><p>{ownListings.length} local listings · {lowStockCount} low-stock alert(s)</p></article>
+        <article className="phase-card"><h2>Demo order records</h2><p>{orders.length} simulated records. This preview does not calculate verified sales or fulfilment.</p><Link to="/orders">View demo order history</Link></article>
+      </div>
+      {ownListings.length === 0
+        ? <p className="empty-state">No local listings yet. <Link to="/marketplace">Create a sample listing in Marketplace</Link></p>
+        : <div className="phase-list">{ownListings.map((product) => <SellerListingEditor
+          key={product.id}
+          product={product}
+          onUpdate={onUpdateProduct}
+          onDelete={onDeleteProduct}
+        />)}</div>}
+    </PageSection>
+  )
+}
+
 export function StandalonePages(props: StandalonePagesProps) {
-  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout } = props
+  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout, onUpdateProduct, onDeleteProduct } = props
 
   if (page === 'product-detail') return <ProductDetail product={product} products={products} onAddToCart={onAddToCart} />
 
@@ -171,13 +248,16 @@ export function StandalonePages(props: StandalonePagesProps) {
     )
   }
 
-  if (page === 'seller-dashboard' || page === 'admin') {
-    const isAdmin = page === 'admin'
+  if (page === 'seller-dashboard') {
+    return <SellerDashboard products={products} orders={orders} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} />
+  }
+
+  if (page === 'admin') {
     return (
-      <PageSection title={isAdmin ? 'Local demo moderation' : 'Seller workspace'} eyebrow="Sandbox only · no authentication or real permissions">
+      <PageSection title="Local demo moderation" eyebrow="Sandbox only · no authentication or real permissions">
         <p className="phase-note">This page is a local preview, not a protected administrator or seller dashboard. Browser data and role labels can be edited by users; do not use it to manage real sellers, customers, listings or orders.</p>
         <div className="phase-list">
-          <article className="phase-card"><h2>{isAdmin ? 'Sample listings to review' : 'Your browser-local listings'}</h2><p>{isAdmin ? 'Moderation actions are not enabled because this demo has no trusted user identity or server-side authorization.' : 'Create or remove your own sample listings in Marketplace. Price and stock editing is not enabled in this preview.'}</p><Link className="primary-button" to="/marketplace">{isAdmin ? 'Review sample catalogue' : 'Manage local listings'}</Link></article>
+          <article className="phase-card"><h2>Sample listings to review</h2><p>Moderation actions are not enabled because this demo has no trusted user identity or server-side authorization.</p><Link className="primary-button" to="/marketplace">Browse sample catalogue</Link></article>
           <article className="phase-card"><h2>Order records</h2><p>{orders.length} local simulated records. No customer purchase or fulfilment is represented.</p><Link to="/orders">View demo order history</Link></article>
         </div>
       </PageSection>

@@ -22,6 +22,13 @@ import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
 import { getRouteForPath, getRouteForTarget } from './config/routes'
 import { translations, type AppLanguage } from './config/translations'
 import { storageRepository } from './services/storageRepository'
+import {
+  deleteOwnedDemoProduct,
+  localDemoSellerId,
+  normalizeLocalListing,
+  updateOwnedDemoProduct,
+  type LocalProductUpdate,
+} from './services/localMarketplaceRepository'
 import type { StandalonePageId } from './components/StandalonePages'
 import {
   catalogueLastUpdated,
@@ -207,9 +214,9 @@ function readStored<T>(key: string, fallback: T): T {
 function loadProducts(): Product[] {
   return readStored<Product[]>(storageKeys.products, [])
     .filter((product) => product.isDemoUserListing)
-    .map((product) =>
+    .map((product) => normalizeLocalListing(
       product.image.startsWith('/') ? product : { ...product, image: productArtworkFor(product.category) },
-    )
+    ))
 }
 
 function writeStored<T>(key: string, value: T): void {
@@ -494,12 +501,14 @@ function App() {
     }
   }
 
-  const persist = <T,>(key: string, value: T) => {
+  const persist = <T,>(key: string, value: T): boolean => {
     try {
       writeStored(key, value)
+      return true
     } catch (error) {
       console.error(`Could not save ${key} to local storage.`, error)
       setStorageError('Your browser could not save this demo data. Check browser storage settings and try again.')
+      return false
     }
   }
 
@@ -753,6 +762,7 @@ function App() {
       stock: 'Contact to confirm',
       image: productArtworkFor(productForm.category),
       isDemoUserListing: true,
+      ownerId: localDemoSellerId,
     }
     const nextProducts = [newProduct, ...products]
     const nextNotifications = [{ id: Date.now() + 1, title: 'Product listing added', text: `${newProduct.name} was added to this browser’s demo catalogue.`, time: 'Just now' }, ...notifications]
@@ -764,14 +774,32 @@ function App() {
     setProductForm({ name: '', category: categories[1], description: '', price: '', wholesalePrice: '', minimumWholesaleQty: '1', unit: 'piece', location: 'Arusha', seller: '', audience: 'B2C' })
   }
 
+  const handleUpdateOwnedProduct = (productId: number, update: LocalProductUpdate): boolean => {
+    try {
+      const nextProducts = updateOwnedDemoProduct(products, localDemoSellerId, productId, update)
+      setProducts(nextProducts)
+      setStorageError('')
+      return persist(storageKeys.products, nextProducts)
+    } catch (error) {
+      console.error('Could not update the local demo listing.', error)
+      setStorageError(error instanceof Error ? error.message : 'Could not update this local demo listing.')
+      return false
+    }
+  }
+
   const handleRemoveProduct = (productId: number) => {
-    setStorageError('')
-    const nextProducts = products.filter((product) => product.id !== productId || !product.isDemoUserListing)
-    const nextCart = cartItems.filter((item) => item.productId !== productId)
-    setProducts(nextProducts)
-    setCartItems(nextCart)
-    persist(storageKeys.products, nextProducts)
-    persist(storageKeys.cart, nextCart)
+    try {
+      const nextProducts = deleteOwnedDemoProduct(products, localDemoSellerId, productId)
+      const nextCart = cartItems.filter((item) => item.productId !== productId)
+      setProducts(nextProducts)
+      setCartItems(nextCart)
+      persist(storageKeys.products, nextProducts)
+      persist(storageKeys.cart, nextCart)
+      setStorageError('')
+    } catch (error) {
+      console.error('Could not remove the local demo listing.', error)
+      setStorageError(error instanceof Error ? error.message : 'Could not remove this local demo listing.')
+    }
   }
 
   const handleRemoveDraft = (draftId: number) => {
@@ -1092,6 +1120,8 @@ function App() {
               onUpdateCartQuantity={handleUpdateCartQuantity}
               onRemoveFromCart={handleRemoveFromCart}
               onCheckout={handleOpenCartCheckout}
+              onUpdateProduct={handleUpdateOwnedProduct}
+              onDeleteProduct={handleRemoveProduct}
             />
           </Suspense>
         )}

@@ -19,10 +19,11 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 - [x] Expand to 41 illustrative products; add URL-synced search, audience/category/location/price/availability filters, sorting and pagination.
 - [x] Add a browser-local cart and explicitly simulated checkout/order log.
-- [ ] Add typed repository/service boundary and local demo persistence.
+- [x] Add a typed local listing repository boundary with explicit local-owner checks and browser persistence.
 - [x] Add basic product detail/specifications/related listings, sample supplier profiles and user-directed quote handoff.
 - [ ] Add product image gallery and order timeline/print receipt; any status updates remain demo-only.
-- [ ] Add seller local listing CRUD, image preview, validation, price/stock edit, demo order status, sales summary and low-stock alert.
+- [x] Add local seller listing create/edit/delete, input validation, price/stock updates and low-stock alerts; label local owner checks as non-security.
+- [ ] Add listing image preview and seller sales/order summaries; do not imply verified sales or fulfillment.
 - [ ] Add demo moderation/user-role/audit views. Browser-local role flags are never authorization.
 - [ ] Test persistence, role boundary, validation, empty/error states and mobile usability.
 

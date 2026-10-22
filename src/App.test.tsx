@@ -3,6 +3,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import App from './App'
 import { productsSeed } from './services/marketplaceCatalog'
+import { localDemoSellerId } from './services/localMarketplaceRepository'
 
 function LocationProbe() {
   const location = useLocation()
@@ -70,6 +71,31 @@ describe('routed application shell', () => {
     )
     expect(await screen.findByRole('heading', { name: 'Local demo moderation' })).toBeVisible()
     expect(screen.getByText(/not a protected administrator or seller dashboard/)).toBeVisible()
+  })
+
+  it('lets the local demo seller update only their browser-local listing', async () => {
+    const listing = {
+      ...productsSeed[0],
+      id: 9001,
+      isDemoUserListing: true,
+      ownerId: localDemoSellerId,
+    }
+    localStorage.setItem('kijiji-connect-products', JSON.stringify([listing]))
+    render(
+      <MemoryRouter initialEntries={['/seller']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const sellerPage = within(await screen.findByText(/This workspace is not protected authentication/).then((text) => text.closest('.standalone-page') as HTMLElement))
+    fireEvent.change(sellerPage.getByLabelText('Retail price for Fresh Avocado Grade A'), { target: { value: '4500' } })
+    fireEvent.change(sellerPage.getByLabelText('Stock quantity for Fresh Avocado Grade A'), { target: { value: '5' } })
+    fireEvent.click(sellerPage.getByRole('button', { name: 'Save price and stock' }))
+
+    expect(await sellerPage.findByText('Price and sample stock saved in this browser only.')).toBeVisible()
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 9001, price: 4500, stockQuantity: 5, stock: 'Sample: Low stock' })]),
+    )
   })
 
   it('navigates between pages and updates the page title', async () => {
