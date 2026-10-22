@@ -16,8 +16,9 @@ Last reviewed: 2026-10-22
 - Payment is simulated and cannot charge, settle, reconcile, or securely verify transactions.
 - Travel enquiries only prepare user-reviewed WhatsApp/email drafts; they do not contact providers, reserve inventory, or confirm a booking.
 - The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent.
-- No automated unit, integration or end-to-end test suite is configured. Browser workflows were checked against the local Vite app; live third-party integrations remain unverified.
-- The React lint command reports a non-blocking `react(set-state-in-effect)` warning in `src/components/TravelPlanningStudio.tsx` when assistant commands synchronize travel form state.
+- Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, and not-found rendering. Automated browser end-to-end coverage has not yet been added.
+- The route foundation maps existing modules to separate URLs, but most page contents remain mounted in the same application shell. Product detail, cart/order history, seller/admin, privacy, terms, FAQ and fully independent page components are not yet implemented.
+- The product catalogue, travel offers, business data, and testimonials are illustrative sample content. Supplier inventory, ratings, and prices are not verified live data.
 - No authorized payment, hotel, airline, tourism, messaging, email, or AI provider integration is configured.
 
 ## Quality and operations

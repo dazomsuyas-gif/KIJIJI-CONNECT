@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import {
   travelOffers,
   travelTypeLabels,
@@ -22,8 +22,11 @@ export type TravelBookingRequest = {
 }
 
 export type TravelAssistantCommand = {
-  message: string
   nonce: number
+  checkIn?: string
+  checkOut?: string
+  nights?: number
+  travelers?: string
 }
 
 type TravelPlanningStudioProps = {
@@ -76,9 +79,26 @@ export function TravelPlanningStudio({
   requests,
   onRequestCreated,
 }: TravelPlanningStudioProps) {
-  const [checkIn, setCheckIn] = useState(dateOffset(7))
-  const [checkOut, setCheckOut] = useState(dateOffset(8))
-  const [travelers, setTravelers] = useState('2')
+  const [initialDates] = useState(() => ({ checkIn: dateOffset(7), checkOut: dateOffset(8) }))
+  const [travelOverrides, setTravelOverrides] = useState<{
+    nonce: number | null
+    checkIn?: string
+    checkOut?: string
+    travelers?: string
+  }>({ nonce: null })
+  const commandNonce = assistantCommand?.nonce ?? null
+  const checkIn = travelOverrides.nonce === commandNonce && travelOverrides.checkIn
+    ? travelOverrides.checkIn
+    : assistantCommand?.checkIn ?? initialDates.checkIn
+  const checkOut = travelOverrides.nonce === commandNonce && travelOverrides.checkOut
+    ? travelOverrides.checkOut
+    : assistantCommand?.checkOut
+      ?? (assistantCommand?.nights
+        ? dateOffset(Math.max(2, assistantCommand.nights + 7))
+        : initialDates.checkOut)
+  const travelers = travelOverrides.nonce === commandNonce && travelOverrides.travelers
+    ? travelOverrides.travelers
+    : assistantCommand?.travelers ?? '2'
   const [rooms, setRooms] = useState('1')
   const [returnFlight, setReturnFlight] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<TravelOffer | null>(null)
@@ -91,42 +111,13 @@ export function TravelPlanningStudio({
   const [plannerInterest, setPlannerInterest] = useState('Wildlife and nature')
   const [plannerDuration, setPlannerDuration] = useState('3')
   const [itinerary, setItinerary] = useState<string[]>([])
-  const lastHandledCommand = useRef<number | null>(null)
-
-  useEffect(() => {
-    if (!assistantCommand || lastHandledCommand.current === assistantCommand.nonce) return
-    lastHandledCommand.current = assistantCommand.nonce
-
-    const message = assistantCommand.message.trim()
-    const lower = message.toLowerCase()
-    const nextCategory: TravelType = /\b(?:hotel|hotels|stay|stays|room|accommodation)\b/.test(lower)
-      ? 'stays'
-      : /\b(?:flight|flights|ticket|tickets|airline|airlines|airport)\b/.test(lower)
-        ? 'flights'
-        : /\b(?:package|packages|safari|tour|tours|trip|travel)\b/.test(lower)
-          ? 'packages'
-          : category
-    onCategoryChange(nextCategory)
-
-    const nextDestination = /\b(?:hotel|hotels|stay|stays|room|accommodation)\b/.test(lower)
-      ? message.match(/\b(?:in|near)\s+([a-z]+(?:\s+[a-z]+){0,2}?)(?=\s+(?:for|with|from|on|between|during|starting)\b|[,.?!]|$)/i)?.[1]
-      : message.match(/\b(?:in|to|around)\s+([a-z]+(?:\s+[a-z]+){0,2}?)(?=\s+(?:for|with|from|on|between|during|starting)\b|[,.?!]|$)/i)?.[1]
-    if (nextDestination) onQueryChange(nextDestination)
-
-    const guestMatch = lower.match(/\b(\d{1,2})\s+(?:travellers?|travelers?|guests?|people|adults?)\b/)
-    if (guestMatch) setTravelers(guestMatch[1])
-
-    const nightMatch = lower.match(/\b(\d{1,2})\s+nights?\b/)
-    if (nightMatch) {
-      const nights = Number(nightMatch[1])
-      setCheckOut(dateOffset(Math.max(2, nights + 7)))
-    }
-
-    const dates = message.match(/\b20\d{2}-\d{2}-\d{2}\b/g)
-    if (dates?.[0]) setCheckIn(dates[0])
-    if (dates?.[1]) setCheckOut(dates[1])
-    document.getElementById('travel-booking')?.scrollIntoView({ behavior: 'smooth' })
-  }, [assistantCommand, category, onCategoryChange, onQueryChange])
+  const setTravelOverride = (key: 'checkIn' | 'checkOut' | 'travelers', value: string) => {
+    setTravelOverrides((current) => ({
+      ...current,
+      nonce: commandNonce,
+      [key]: value,
+    }))
+  }
 
   const visibleOffers = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -238,9 +229,9 @@ export function TravelPlanningStudio({
           <p>Explore sample routes, Arusha stay types and local itineraries. Every listing below is illustrative: ask a licensed provider to verify dates, price, safety, permits and availability before making plans.</p>
         </div>
         <div className="travel-search-fields">
-          <label>Start date<input type="date" value={checkIn} min={dateOffset(0)} onChange={(event) => setCheckIn(event.target.value)} /></label>
-          <label>{category === 'stays' ? 'Check-out' : 'Return date (if needed)'}<input type="date" value={checkOut} min={checkIn} onChange={(event) => setCheckOut(event.target.value)} /></label>
-          <label>Travellers<input type="number" min="1" max="12" value={travelers} onChange={(event) => setTravelers(event.target.value)} /></label>
+          <label>Start date<input type="date" value={checkIn} min={dateOffset(0)} onChange={(event) => setTravelOverride('checkIn', event.target.value)} /></label>
+          <label>{category === 'stays' ? 'Check-out' : 'Return date (if needed)'}<input type="date" value={checkOut} min={checkIn} onChange={(event) => setTravelOverride('checkOut', event.target.value)} /></label>
+          <label>Travellers<input type="number" min="1" max="12" value={travelers} onChange={(event) => setTravelOverride('travelers', event.target.value)} /></label>
           {category === 'stays' && <label>Rooms<input type="number" min="1" max="6" value={rooms} onChange={(event) => setRooms(event.target.value)} /></label>}
           {category === 'flights' && (
             <label className="travel-return-toggle">

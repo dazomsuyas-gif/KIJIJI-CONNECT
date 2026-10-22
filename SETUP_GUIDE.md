@@ -17,10 +17,11 @@ To verify code changes:
 
 ```powershell
 npm run lint
+npm test
 npm run build
 ```
 
-The latest production build passed. Lint exits successfully but currently reports one non-blocking React effect warning in `src/components/TravelPlanningStudio.tsx`. The project does not currently define an automated test command.
+The project includes Vitest and Testing Library checks. The latest Phase 1 verification passed the build, lint, and automated test suite.
 
 ## 2. Check whether you already have Supabase
 

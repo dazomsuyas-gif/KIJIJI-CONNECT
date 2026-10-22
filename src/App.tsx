@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import { generateDemoContent } from './services/demoAi'
 import {
@@ -18,6 +19,9 @@ import {
 } from './services/languageLearning'
 import { LanguageLearningStudio } from './components/LanguageLearningStudio'
 import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
+import { getRouteForPath, getRouteForTarget } from './config/routes'
+import { translations, type AppLanguage } from './config/translations'
+import { storageRepository } from './services/storageRepository'
 import type { TravelType } from './services/travelCatalog'
 import {
   TravelPlanningStudio,
@@ -91,18 +95,19 @@ type AutomationRun = {
 }
 
 const navItems = [
-  { label: 'Home', href: '#home' },
-  { label: 'Marketplace', href: '#marketplace' },
-  { label: 'Travel', href: '#travel-booking' },
-  { label: 'Learning', href: '#learn-languages' },
-  { label: 'Business tools', href: '#automation' },
-  { label: 'AI Studio', href: '#ai-studio' },
-  { label: 'Community', href: '#community' },
-  { label: 'Payments', href: '#payments' },
-  { label: 'Integrations', href: '#integrations' },
-  { label: 'Destinations', href: '#tourism-heritage' },
-  { label: 'Activity', href: '#notifications' },
-  { label: 'Account', href: '#my-account' },
+  { label: 'Home', href: '/' },
+  { label: 'Marketplace', href: '/marketplace' },
+  { label: 'Travel', href: '/travel' },
+  { label: 'Learning', href: '/learning' },
+  { label: 'Business tools', href: '/business-tools' },
+  { label: 'AI Studio', href: '/ai-studio' },
+  { label: 'Community', href: '/community' },
+  { label: 'Payments', href: '/payments' },
+  { label: 'Integrations', href: '/integrations' },
+  { label: 'Destinations', href: '/destinations' },
+  { label: 'Activity', href: '/activity' },
+  { label: 'Account', href: '/account' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 const categories = [
@@ -192,19 +197,11 @@ function createLocalId() {
 }
 
 function readStored<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-
-  try {
-    const storedValue = window.localStorage.getItem(key)
-    return storedValue ? (JSON.parse(storedValue) as T) : fallback
-  } catch (error) {
-    console.error(`Could not read ${key} from local storage.`, error)
-    return fallback
-  }
+  return storageRepository.read(key, fallback)
 }
 
 function writeStored<T>(key: string, value: T): void {
-  window.localStorage.setItem(key, JSON.stringify(value))
+  storageRepository.write(key, value)
 }
 
 function ChatTranscript({ messages }: { messages: Message[] }) {
@@ -376,6 +373,66 @@ const productArtworkFor = (category: string) => {
 }
 
 function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const activeRoute = getRouteForPath(location.pathname)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [language, setLanguage] = useState<AppLanguage>(() =>
+    readStored('kijiji-connect-language', 'en'),
+  )
+  const [darkMode, setDarkMode] = useState(() =>
+    readStored('kijiji-connect-dark-mode', false),
+  )
+  const t = translations[language]
+
+  const navigateToTarget = (targetId: string, focus = false) => {
+    const route = getRouteForTarget(targetId)
+    if (!route) {
+      console.error(`No application route is configured for target "${targetId}".`)
+      return
+    }
+
+    setMobileNavOpen(false)
+    if (location.pathname === route.path) {
+      const target = document.getElementById(focus ? targetId : route.sectionId)
+      target?.scrollIntoView({ behavior: 'smooth', block: focus ? 'center' : 'start' })
+      if (focus && target instanceof HTMLElement) target.focus({ preventScroll: true })
+      return
+    }
+    navigate(route.path, { state: { scrollTarget: focus ? targetId : route.sectionId } })
+  }
+
+  useEffect(() => {
+    const route = getRouteForPath(location.pathname)
+    document.documentElement.lang = language
+    document.title = route
+      ? `${route.title} | Kijiji Connect`
+      : 'Page not found | Kijiji Connect'
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+    if (description) {
+      description.content = route
+        ? `${route.title} on Kijiji Connect — ${translations[language].common.pageIntro}`
+        : 'The requested Kijiji Connect page could not be found.'
+    }
+
+    const targetId = typeof location.state?.scrollTarget === 'string'
+      ? location.state.scrollTarget
+      : null
+    if (targetId) {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(targetId)
+        target?.scrollIntoView({ behavior: 'smooth', block: targetId === route?.sectionId ? 'start' : 'center' })
+        if (targetId !== route?.sectionId && target instanceof HTMLElement) {
+          target.focus({ preventScroll: true })
+        }
+      })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [language, location.pathname, location.state])
+
+  const currentPage = activeRoute?.page ?? 'not-found'
+
   const [activeFilter, setActiveFilter] = useState<'All Products' | 'B2B' | 'B2C'>('All Products')
   const [activeCategory, setActiveCategory] = useState('All categories')
   const [searchText, setSearchText] = useState('')
@@ -432,6 +489,27 @@ function App() {
     readStored(storageKeys.assistantMessages, [assistantGreeting]),
   )
 
+  const updateLanguage = (nextLanguage: AppLanguage) => {
+    setLanguage(nextLanguage)
+    try {
+      storageRepository.write('kijiji-connect-language', nextLanguage)
+    } catch (error) {
+      console.error('Could not save the language preference.', error)
+      setStorageError('Your language preference could not be saved in this browser.')
+    }
+  }
+
+  const toggleDarkMode = () => {
+    const nextDarkMode = !darkMode
+    setDarkMode(nextDarkMode)
+    try {
+      storageRepository.write('kijiji-connect-dark-mode', nextDarkMode)
+    } catch (error) {
+      console.error('Could not save the appearance preference.', error)
+      setStorageError('Your appearance preference could not be saved in this browser.')
+    }
+  }
+
   const persist = <T,>(key: string, value: T) => {
     try {
       writeStored(key, value)
@@ -478,8 +556,23 @@ function App() {
               ? 'packages'
               : travelCategory
         setTravelCategory(category)
+        const isStayRequest = category === 'stays'
+        const destination = trimmed.match(isStayRequest
+          ? /\b(?:in|near)\s+([a-z]+(?:\s+[a-z]+){0,2}?)(?=\s+(?:for|with|from|on|between|during|starting)\b|[,.?!]|$)/i
+          : /\b(?:in|to|around)\s+([a-z]+(?:\s+[a-z]+){0,2}?)(?=\s+(?:for|with|from|on|between|during|starting)\b|[,.?!]|$)/i)?.[1]
+        const guestCount = trimmed.match(/\b(\d{1,2})\s+(?:travellers?|travelers?|guests?|people|adults?)\b/i)?.[1]
+        const nightCount = trimmed.match(/\b(\d{1,2})\s+nights?\b/i)?.[1]
+        const dates = trimmed.match(/\b20\d{2}-\d{2}-\d{2}\b/g)
+        if (destination) setTravelQuery(destination)
         const nonce = createLocalId()
-        setTravelAssistantCommand({ message: trimmed, nonce })
+        setTravelAssistantCommand({
+          nonce,
+          travelers: guestCount,
+          nights: nightCount ? Number(nightCount) : undefined,
+          checkIn: dates?.[0],
+          checkOut: dates?.[1],
+        })
+        navigateToTarget('travel-booking')
         reply = `I’ve opened ${category === 'stays' ? 'hotel and stay' : category === 'flights' ? 'flight' : 'tour package'} options to help plan your enquiry. Check the travel dates, group size and illustrative prices, then review any enquiry before contacting a provider. Nothing is booked automatically.`
       } else if (intent.section === 'learn-languages') {
         const courseId = /\b(?:swahili|kiswahili)\b/i.test(trimmed)
@@ -494,23 +587,23 @@ function App() {
           ?? course.levels[0]
         setLearningLanguage(course.id)
         setLearningLevel(nextLesson.id)
-        document.getElementById('learn-languages')?.scrollIntoView({ behavior: 'smooth' })
+        navigateToTarget('learn-languages')
         reply = `Opening ${course.name} (${nextLesson.band}). Study the material and pass the short check to record progress. The suggested modules follow learning goals but are not an accredited exam.`
       } else {
-        document.getElementById(intent.section)?.scrollIntoView({ behavior: 'smooth' })
+        navigateToTarget(intent.section)
         reply = `Opening ${sectionLabels[intent.section]}. You can ask me to help with the next step there.`
       }
     } else if (intent.type === 'search') {
       setActiveCategory('All categories')
       setActiveFilter('All Products')
       setSearchText(intent.query)
-      document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+      navigateToTarget('marketplace')
       reply = `Searching marketplace listings for “${intent.query}”. Review the matching listing and choose an action when you are ready.`
     } else if (intent.type === 'draft') {
       const draftDetails = { title: intent.title, kind: intent.kind, topic: intent.topic }
       setDraftForm(draftDetails)
       const generated = handleGenerateDraft(draftDetails)
-      document.getElementById('ai-studio')?.scrollIntoView({ behavior: 'smooth' })
+      navigateToTarget('ai-studio')
       reply = generated
         ? `I created a local ${intent.kind.toLowerCase()} draft about ${intent.topic} and saved it in AI Studio. Please review it before sharing. No external AI was called.`
         : 'I could not save that draft. Please check your browser storage and try again.'
@@ -518,8 +611,7 @@ function App() {
       if (intent.productName) {
         setProductForm((current) => ({ ...current, name: intent.productName }))
       }
-      document.getElementById('product-listing-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      window.setTimeout(() => document.getElementById('product-name')?.focus({ preventScroll: true }), 250)
+      navigateToTarget('product-name', true)
       reply = intent.productName
         ? `I filled in “${intent.productName}” as the listing name. Add accurate pricing and seller details, then publish it yourself to this browser's demo catalogue.`
         : 'The listing form is open. Add your product details and confirm everything before publishing it locally.'
@@ -529,13 +621,13 @@ function App() {
         title: intent.title || current.title,
         room: intent.room,
       }))
-      document.getElementById('community')?.scrollIntoView({ behavior: 'smooth' })
+      navigateToTarget('community')
       reply = 'The community post form is open with your discussion room selected. Add and review the post text, then choose Publish yourself. Nothing is shared with other users.'
     } else if (intent.type === 'run-automation') {
       const workflow = automationWorkflows.find((item) => item.id === intent.workflow)
       if (workflow) {
         handleRunAutomation(workflow)
-        document.getElementById('automation')?.scrollIntoView({ behavior: 'smooth' })
+        navigateToTarget('automation')
         reply = `${workflow.outcome} You can review the run in Automation and Notifications.`
       } else {
         reply = 'I could not find that demo workflow. Open Automation to review the available workflows.'
@@ -546,7 +638,7 @@ function App() {
         ?? course.levels[0]
       setLearningLanguage(course.id)
       setLearningLevel(nextLesson.id)
-      document.getElementById('learn-languages')?.scrollIntoView({ behavior: 'smooth' })
+      navigateToTarget('learn-languages')
       reply = `I opened the next ${course.name} practice module (${nextLesson.band}). Review the lesson and pass its knowledge check to track your progress. This is learning practice, not a certified assessment.`
     } else if (intent.type === 'checkout') {
       const query = intent.productQuery.toLowerCase().trim()
@@ -560,7 +652,7 @@ function App() {
         setSearchText(query)
         setActiveCategory('All categories')
         setActiveFilter('All Products')
-        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+        navigateToTarget('marketplace')
         reply = query
           ? `I could not match “${intent.productQuery}” to a listing. I searched the marketplace so you can check available products.`
           : 'Open Marketplace to choose a product, or ask me to find a specific item. Checkout is always a sandbox simulation, never a real payment.'
@@ -830,55 +922,90 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={darkMode ? 'dark' : 'light'}>
       <header className="topbar">
         <div className="brand-wrap">
-          <img className="brand-mark" src="/kijiji-connect-logo.svg" alt="" aria-hidden="true" />
-          <div>
+          <Link className="brand-link" to="/" aria-label="Kijiji Connect home">
+            <img className="brand-mark" src="/kijiji-connect-logo.svg" alt="" aria-hidden="true" />
+          </Link>
+          <div className="brand-copy">
             <p className="brand-name">Kijiji Connect</p>
             <span className="brand-subtitle">Tanzania · Trade, travel & learning</span>
           </div>
         </div>
 
-        <nav className="main-nav" aria-label="Primary navigation">
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          aria-expanded={mobileNavOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMobileNavOpen((open) => !open)}
+        >
+          {mobileNavOpen ? 'Close menu' : 'Menu'}
+        </button>
+
+        <nav id="primary-navigation" className={`main-nav${mobileNavOpen ? ' is-open' : ''}`} aria-label="Primary navigation">
           {navItems.map((item) => (
-            <a key={item.label} href={item.href} className="main-nav__item">
-              {item.label}
-            </a>
+            <NavLink
+              key={item.label}
+              to={item.href}
+              className={({ isActive }) => `main-nav__item${isActive ? ' is-active' : ''}`}
+              onClick={() => setMobileNavOpen(false)}
+            >
+              {t.navigation[item.label] ?? item.label}
+            </NavLink>
           ))}
         </nav>
 
         <div className="topbar-actions">
-          <button type="button" className="ghost-button" onClick={() => {
-            document.getElementById('marketplace-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            document.getElementById('marketplace-search')?.focus({ preventScroll: true })
-          }}>
+          <button type="button" className="ghost-button" onClick={() => navigateToTarget('catalog-search', true)}>
             Search
           </button>
-          <button type="button" className="primary-button" onClick={() => {
-            document.getElementById('product-listing-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            document.getElementById('product-name')?.focus({ preventScroll: true })
-          }}>
+          <button type="button" className="primary-button" onClick={() => navigateToTarget('product-name', true)}>
             Sell now
+          </button>
+          <label className="preference-control">
+            <span>{t.common.language}</span>
+            <select aria-label={t.common.language} value={language} onChange={(event) => updateLanguage(event.target.value as AppLanguage)}>
+              <option value="en">English</option>
+              <option value="sw">Kiswahili</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-pressed={darkMode}
+            onClick={toggleDarkMode}
+          >
+            {darkMode ? t.common.light : t.common.dark}
           </button>
         </div>
       </header>
 
-      <main className="page-shell">
+      <main className="page-shell" data-current-page={currentPage}>
+        {!activeRoute ? (
+          <section className="section-block route-not-found" aria-labelledby="not-found-heading">
+            <span className="eyebrow">404 · Kijiji Connect</span>
+            <h1 id="not-found-heading">{t.common.notFound}</h1>
+            <p>The page address may have changed, or the page is not available yet.</p>
+            <Link className="primary-button" to="/">{t.common.backHome}</Link>
+          </section>
+        ) : (
+          <>
         {storageError && <p className="storage-error" role="alert">{storageError}</p>}
-        <section id="home" className="hero-section">
+        <section id="home" data-route-page="home" className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow">One platform · Tanzania-connected</span>
-            <h1>Make your next move in Tanzania.</h1>
+            <h1>{t.headings.home}</h1>
             <p>
               Find local suppliers, build practical language skills, and start planning your northern Tanzania adventure.
             </p>
 
             <div className="hero-primary-actions">
-              <button type="button" className="primary-button" onClick={() => document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })}>
+              <button type="button" className="primary-button" onClick={() => navigateToTarget('marketplace')}>
                 Explore the marketplace
               </button>
-              <button type="button" className="secondary-button" onClick={() => document.getElementById('travel-booking')?.scrollIntoView({ behavior: 'smooth' })}>
+              <button type="button" className="secondary-button" onClick={() => navigateToTarget('travel-booking')}>
                 Plan a trip
               </button>
             </div>
@@ -892,7 +1019,7 @@ function App() {
                 aria-label="Search products and suppliers"
                 placeholder="Search products, businesses, tourism guides, or lessons"
               />
-              <button type="button" className="primary-button" onClick={() => document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })}>
+              <button type="button" className="primary-button" onClick={() => navigateToTarget('marketplace')}>
                 Search
               </button>
             </div>
@@ -931,7 +1058,7 @@ function App() {
           </div>
         </section>
 
-        <section id="ai-studio" className="section-block">
+        <section id="ai-studio" data-route-page="ai-studio" className="section-block">
           <div className="section-heading">
             <div>
               <span className="eyebrow">AI Studio · Local content assistant</span>
@@ -954,7 +1081,7 @@ function App() {
           </div>
         </section>
 
-        <section id="automation" className="section-block">
+        <section id="automation" data-route-page="automation" className="section-block">
           <div className="section-heading">
             <div><span className="eyebrow">Business operations · Local workflow preview</span><h2>Make recurring business tasks easier to follow.</h2></div>
             <span className="status-pill">Connected services require integration</span>
@@ -974,8 +1101,8 @@ function App() {
           {automationRuns.length > 0 && <div className="automation-history"><div className="history-heading"><h3>Recent demo runs</h3><button type="button" className="remove-listing" onClick={handleClearAutomationRuns}>Clear run history</button></div>{automationRuns.slice(0, 3).map((run) => <div key={run.id} className="automation-run"><strong>{run.workflow}</strong><span>{run.outcome}</span><small>{run.time}</small></div>)}</div>}
         </section>
 
-        <section id="learn-languages" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">Language learning · CEFR-informed pathways</span><h2>Build practical skills at your own pace.</h2></div></div>
+        <section id="learn-languages" data-route-page="learning" className="section-block">
+          <div className="section-heading"><div><span className="eyebrow">Language learning · CEFR-informed pathways</span>          <h2>{t.headings.learning}</h2></div></div>
           <LanguageLearningStudio
             completedLessonIds={completedLessons}
             levelScores={lessonScores}
@@ -990,11 +1117,11 @@ function App() {
           />
         </section>
 
-        <section id="travel-booking" className="section-block travel-booking-section">
+        <section id="travel-booking" data-route-page="travel" className="section-block travel-booking-section">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Tanzania travel planning · Enquiry-only demo</span>
-              <h2>Stay, travel and explore with a clearer plan.</h2>
+              <h2>{t.headings.travel}</h2>
             </div>
             <span className="status-pill">No live fares or hotel availability</span>
           </div>
@@ -1009,8 +1136,8 @@ function App() {
           />
         </section>
 
-        <section id="community" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">Community • Local demo</span><h2>Share ideas and learn from others</h2></div></div>
+        <section id="community" data-route-page="community" className="section-block">
+          <div className="section-heading"><div><span className="eyebrow">Community • Local demo</span><h2>{t.headings.community}</h2></div></div>
           <div className="phase-layout">
             <form className="phase-form" onSubmit={(event) => { event.preventDefault(); handleAddPost() }}>
               <label>Discussion room<select value={postForm.room} onChange={(event) => setPostForm((current) => ({ ...current, room: event.target.value }))}><option>Business & Entrepreneurship</option><option>Education & Careers</option><option>Tourism & Travel</option><option>Culture & Community Stories</option></select></label>
@@ -1026,17 +1153,17 @@ function App() {
           </div>
         </section>
 
-        <section id="tourism-heritage" className="section-block">
+        <section id="tourism-heritage" data-route-page="destinations" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Tourism & Heritage · Regional inspiration</span><h2>Explore Tanzania with local context.</h2></div></div>
           <div className="tour-grid">{tourismPlaces.map((place) => <article key={place.title} className="tour-card"><img src={place.image} alt={place.imageAlt} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} /><div className="tour-card__body"><span className="badge badge--gold">{place.location}</span><h3>{place.title}</h3><p>{place.text}</p><button type="button" className="secondary-button" onClick={() => {
             setTravelCategory('packages')
             setTravelQuery(place.location === 'Ngorongoro' ? 'Arusha' : place.location)
-            document.getElementById('travel-booking')?.scrollIntoView({ behavior: 'smooth' })
+            navigateToTarget('travel-booking')
           }}>Explore nearby plans</button></div></article>)}</div>
           <p className="phase-note">Visitor details and availability should be confirmed with official destination operators before travel.</p>
         </section>
 
-        <section id="integrations" className="section-block integration-section">
+        <section id="integrations" data-route-page="integrations" className="section-block integration-section">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Customer channels · Integration readiness</span>
@@ -1068,7 +1195,7 @@ function App() {
           </div>
         </section>
 
-        <section id="ai-assistant" className="section-block assistant-section">
+        <section id="ai-assistant" data-route-page="contact" className="section-block assistant-section">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Site-wide guided assistant</span>
@@ -1130,15 +1257,26 @@ function App() {
           </div>
         </section>
 
-        <section id="marketplace" className="section-block marketplace-section">
+        <section id="marketplace" data-route-page="marketplace" className="section-block marketplace-section">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Marketplace · Sample listings</span>
-              <h2>Explore local products and suppliers</h2>
+              <h2>{t.headings.marketplace}</h2>
             </div>
             <a className="primary-button compact seller-register-link" href={whatsappUrl('Hello, I would like to register as a seller on Kijiji Connect.')} target="_blank" rel="noreferrer">
               Ask about seller registration
             </a>
+          </div>
+
+          <div className="market-search-panel">
+            <label htmlFor="catalog-search">Search products and suppliers</label>
+            <input
+              id="catalog-search"
+              type="search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Product, category, supplier or location"
+            />
           </div>
 
           <div className="market-toolbar">
@@ -1240,7 +1378,7 @@ function App() {
           </div>
         </section>
 
-        <section id="payments" className="section-block">
+        <section id="payments" data-route-page="payments" className="section-block">
           <div className="section-heading">
             <div><span className="eyebrow">Tanzania payment methods • Sandbox</span><h2>Choose a familiar way to pay</h2></div>
             <span className="status-pill">Demo API · No real charges</span>
@@ -1268,7 +1406,7 @@ function App() {
           </div>
         </section>
 
-        <section id="notifications" className="section-block">
+        <section id="notifications" data-route-page="activity" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Notifications</span><h2>Recent activity in this browser</h2></div>{notifications.length > 0 && <button type="button" className="ghost-button small notification-clear" onClick={handleClearNotifications}>Clear notifications</button>}</div>
           <div className="phase-list">
             {notifications.length === 0 && <p className="empty-state">Activity from new drafts and community posts will appear here.</p>}
@@ -1276,15 +1414,15 @@ function App() {
           </div>
         </section>
 
-        <section id="my-account" className="section-block">
-          <div className="section-heading"><div><span className="eyebrow">My Account · Authentication setup</span><h2>Your account and activity</h2></div></div>
+        <section id="my-account" data-route-page="account" className="section-block">
+          <div className="section-heading"><div><span className="eyebrow">MY ACCOUNT · AUTHENTICATION SETUP</span><h2>{t.headings.account}</h2></div></div>
           <div className="account-grid">
             <SupabaseAuthPanel />
             <article className="phase-card"><h3>Workspace activity</h3><ul className="activity-list"><li>Marketplace listings: {products.length}</li><li>Content drafts: {drafts.length}</li><li>Community posts: {posts.length}</li><li>Lessons completed: {completedLessons.length}</li></ul></article>
           </div>
         </section>
 
-        <section className="section-block supplier-section">
+        <section className="section-block supplier-section" data-route-page="home">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Supplier discovery · Sample profiles</span>
@@ -1310,7 +1448,7 @@ function App() {
                     setSearchText(supplier.name)
                     setActiveCategory('All categories')
                     setActiveFilter('All Products')
-                    document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' })
+                    navigateToTarget('marketplace')
                   }}>View supplier listings</button>
                 </div>
               </article>
@@ -1318,7 +1456,7 @@ function App() {
           </div>
         </section>
 
-        <section className="section-block insight-section">
+        <section className="section-block insight-section" data-route-page="home">
           <div className="feature-panel">
             <div>
               <span className="eyebrow">Marketplace advantages</span>
@@ -1331,6 +1469,8 @@ function App() {
             </ul>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <aside className={`assistant-widget${assistantOpen ? ' is-open' : ''}`} aria-label="Kijiji Connect guided assistant">

@@ -19,6 +19,8 @@ Authentication requests cannot be live-tested until valid project settings are c
 
 ## Current prototype modules
 
+- Routed application foundation: Home, Marketplace, Travel, Learning, Business tools, AI Studio, Community, Payments, Integrations, Destinations, Activity, Account, and Contact have direct browser paths. Browser back/forward, page titles, unknown-route handling, a responsive navigation menu, and Vercel SPA fallback are enabled.
+- Accessibility and presentation foundation: Times New Roman typography is configured through CSS variables, reduced-motion behavior and visible keyboard focus are respected, and English/Kiswahili navigation and key headings plus a persistent light/dark preference are available.
 - Marketplace: search and filter the sample catalogue, publish locally stored demo listings, and open WhatsApp enquiries.
 - Sandbox checkout: simulate mobile-money, bank-transfer and bank-card flows for common Tanzania payment methods; records stay in this browser and no provider is contacted.
 - AI Content Studio: generate and save starter copy templates locally. This is not connected to a generative AI service.
@@ -31,6 +33,19 @@ Authentication requests cannot be live-tested until valid project settings are c
 - Notifications and account overview: show activity and browser-local demo data.
 - Business support: WhatsApp, email and Instagram links use the supplied contact details.
 - A custom local SVG logo, original illustrations, and locally served photographs keep the visual demo independent of remote image hosts.
+- Local browser persistence is accessed through a shared storage repository adapter. Data remains local and is not a substitute for a secure shared backend.
+
+## Development checks
+
+```sh
+npm run lint
+npm test
+npm run build
+```
+
+Vitest and Testing Library currently cover route configuration, storage behavior, direct routes, navigation, and unknown paths. End-to-end Playwright tests have not yet been added.
+
+The current route foundation displays the existing section-based modules at separate URLs; routes for product details, cart, orders, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
 
 ## Prototype limitations
 
@@ -44,6 +59,6 @@ This project currently has no backend, configured user authentication, role perm
 4. Before accepting real customers or bookings, build a secured backend with authentication, data storage, validation, privacy controls, monitoring and backups. Add AI, email, WhatsApp Business, travel inventory and payment providers through server-side integrations only; configure their authorization and credentials with the service provider.
 5. Verify live prices, inventory, business identity, operating terms and contact channels before publishing them as real offers. Do not market the local examples as live inventory or confirmed booking prices.
 
-The savannah and produce photos are representative Unsplash images, not verified photos of the named businesses or destinations. Their source files are stored locally in `public/` so the demo does not depend on a live image host. The savannah image is from [Unsplash](https://images.unsplash.com/photo-1516026672322-bc52d61a55d5), and the produce-market photo is from [Unsplash](https://images.unsplash.com/photo-1542838132-92c53300491e); see the [Unsplash License](https://unsplash.com/license).
+The savannah and produce photos are representative Unsplash images, not verified photos of the named businesses or destinations. Their source files are stored locally in `public/` so the demo does not depend on a live image host. The savannah image is from [Unsplash](https://images.unsplash.com/photo-1516026672322-bc52d61a55d5), and the produce-market photo is from [Unsplash](https://images.unsplash.com/photo-1542838132-92c53300491e); see [CREDITS.md](./CREDITS.md) and the [Unsplash License](https://unsplash.com/license).
 
 For future integrations, replace the demo payment adapter in `src/services/demoPayments.ts` with calls to your own authenticated server endpoints, and replace the local content generator in `src/services/demoAi.ts` with a server-side AI endpoint. Provider credentials, payment verification, webhooks, access controls, moderation and sensitive data must remain server-side. Never put private service keys or card data in frontend code.

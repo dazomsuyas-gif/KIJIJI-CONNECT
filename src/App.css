@@ -1,6 +1,12 @@
 .app-shell {
-  background: #f7f4ea;
-  color: #1d2a1d;
+  --surface-page: var(--color-cream);
+  --surface-card: var(--color-paper);
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-muted);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
   min-height: 100vh;
 }
 
@@ -31,6 +37,15 @@ button {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+}
+
+.brand-link {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 .brand-mark {
@@ -68,10 +83,48 @@ button {
   font-size: 0.92rem;
 }
 
+.main-nav__item.is-active {
+  color: #fffdf6;
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.4rem;
+}
+
+.mobile-menu-toggle {
+  display: none;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.preference-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(239, 247, 240, 0.8);
+  font-size: 0.78rem;
+}
+
+.preference-control select,
+.theme-toggle {
+  min-height: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.65rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7fbf8;
+}
+
+.preference-control option {
+  color: #1d2a1d;
+}
+
+.theme-toggle {
+  cursor: pointer;
 }
 
 .primary-button,
@@ -121,6 +174,40 @@ button {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
+}
+
+.page-shell[data-current-page] > section {
+  display: none;
+}
+
+.page-shell[data-current-page="home"] > section[data-route-page="home"],
+.page-shell[data-current-page="marketplace"] > section[data-route-page="marketplace"],
+.page-shell[data-current-page="travel"] > section[data-route-page="travel"],
+.page-shell[data-current-page="learning"] > section[data-route-page="learning"],
+.page-shell[data-current-page="automation"] > section[data-route-page="automation"],
+.page-shell[data-current-page="ai-studio"] > section[data-route-page="ai-studio"],
+.page-shell[data-current-page="community"] > section[data-route-page="community"],
+.page-shell[data-current-page="payments"] > section[data-route-page="payments"],
+.page-shell[data-current-page="integrations"] > section[data-route-page="integrations"],
+.page-shell[data-current-page="destinations"] > section[data-route-page="destinations"],
+.page-shell[data-current-page="activity"] > section[data-route-page="activity"],
+.page-shell[data-current-page="account"] > section[data-route-page="account"],
+.page-shell[data-current-page="contact"] > section[data-route-page="contact"] {
+  display: block;
+}
+
+.route-not-found {
+  display: grid !important;
+  justify-items: start;
+  gap: 0.75rem;
+  min-height: 22rem;
+  align-content: center;
+  padding: clamp(1.5rem, 5vw, 4rem);
+}
+
+.route-not-found h1,
+.route-not-found p {
+  margin: 0;
 }
 
 .hero-section {
@@ -771,6 +858,33 @@ button {
   color: rgba(24, 50, 33, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.market-search-panel {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 52rem;
+  margin-top: 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(18, 41, 25, 0.1);
+  border-radius: 1rem;
+  background: #f3f1ea;
+}
+
+.market-search-panel label {
+  color: #244b35;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.market-search-panel input {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid rgba(18, 41, 25, 0.16);
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  background: #fffdf9;
+  color: #1d2a1d;
 }
 
 .market-toolbar {
@@ -3052,6 +3166,9 @@ button {
 
 @media (max-width: 640px) {
   .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     padding-top: 0.7rem;
     padding-bottom: 0.7rem;
   }
@@ -3065,13 +3182,47 @@ button {
   }
 
   .main-nav {
-    justify-content: flex-start;
+    display: none;
+    grid-column: 1 / -1;
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(70vh, 32rem);
+    overflow: auto;
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.9rem;
+    background: var(--color-forest-deep);
     overscroll-behavior-x: contain;
     scroll-padding-inline: 0.75rem;
   }
 
+  .main-nav.is-open {
+    display: flex;
+  }
+
+  .main-nav__item {
+    padding: 0.55rem 0.7rem;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.7rem;
+    padding: 0.45rem 0.8rem;
+    background: transparent;
+    color: #f7fbf8;
+    font: inherit;
+    font-weight: 700;
+  }
+
   .topbar-actions {
-    overflow: hidden;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    overflow: visible;
   }
 
   .page-shell {
@@ -3179,6 +3330,53 @@ button {
   .travel-contact-actions > * {
     flex: 1 1 100%;
   }
+}
+
+.app-shell[data-theme="dark"] {
+  --surface-page: #17231c;
+  --surface-card: #213129;
+  --text-primary: #f1f4ed;
+  --text-secondary: #c0c9bd;
+  color-scheme: dark;
+}
+
+.app-shell[data-theme="dark"] .page-shell {
+  color: var(--text-primary);
+}
+
+.app-shell[data-theme="dark"] .hero-copy,
+.app-shell[data-theme="dark"] .hero-highlight,
+.app-shell[data-theme="dark"] .section-block,
+.app-shell[data-theme="dark"] .feature-panel,
+.app-shell[data-theme="dark"] .phase-card,
+.app-shell[data-theme="dark"] .automation-card,
+.app-shell[data-theme="dark"] .integration-card,
+.app-shell[data-theme="dark"] .learning-lesson,
+.app-shell[data-theme="dark"] .learning-example,
+.app-shell[data-theme="dark"] .learning-quiz,
+.app-shell[data-theme="dark"] .learning-writing {
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.app-shell[data-theme="dark"] .hero-copy h1,
+.app-shell[data-theme="dark"] .section-block h2,
+.app-shell[data-theme="dark"] .section-block h3,
+.app-shell[data-theme="dark"] .phase-card h3,
+.app-shell[data-theme="dark"] .automation-card h3,
+.app-shell[data-theme="dark"] .integration-card h3,
+.app-shell[data-theme="dark"] .hero-copy p,
+.app-shell[data-theme="dark"] .section-block p,
+.app-shell[data-theme="dark"] .section-block label,
+.app-shell[data-theme="dark"] .section-block small {
+  color: var(--text-primary);
+}
+
+.app-shell[data-theme="dark"] input,
+.app-shell[data-theme="dark"] select,
+.app-shell[data-theme="dark"] textarea {
+  background-color: #17231c;
+  color: var(--text-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

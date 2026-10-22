@@ -1,9 +1,18 @@
 :root {
-  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
-  line-height: 1.5;
+  --font-sans: 'Times New Roman', Times, serif;
+  --color-forest: #173c2b;
+  --color-forest-deep: #102a1f;
+  --color-cream: #f7f4ea;
+  --color-paper: #fffdf9;
+  --color-gold: #c49a4a;
+  --color-ink: #1d2a1d;
+  --color-muted: #657168;
+  --focus-ring: #b77039;
+  font-family: var(--font-sans);
+  line-height: 1.6;
   font-weight: 400;
-  color: #1a3023;
-  background: #f5f3ed;
+  color: var(--color-ink);
+  background: var(--color-cream);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -23,7 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #f5f3ed;
+  background: var(--color-cream);
 }
 
 img {
@@ -46,7 +55,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(183, 112, 57, 0.55);
+  outline: 3px solid color-mix(in srgb, var(--focus-ring), transparent 35%);
   outline-offset: 2px;
 }
 
