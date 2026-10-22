@@ -16,12 +16,12 @@ Last reviewed: 2026-10-22
 - Payment is simulated and cannot charge, settle, reconcile, or securely verify transactions.
 - Travel enquiries only prepare user-reviewed WhatsApp/email drafts; they do not contact providers, reserve inventory, or confirm a booking.
 - The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent.
+- No automated unit, integration or end-to-end test suite is configured. Browser workflows were checked against the local Vite app; live third-party integrations remain unverified.
+- The React lint command reports a non-blocking `react(set-state-in-effect)` warning in `src/components/TravelPlanningStudio.tsx` when assistant commands synchronize travel form state.
 - No authorized payment, hotel, airline, tourism, messaging, email, or AI provider integration is configured.
 
 ## Quality and operations
 
-- `package.json` does not define an automated unit, integration, or end-to-end test script.
-- The lint command currently emits a non-blocking `react(set-state-in-effect)` warning in `src/components/TravelPlanningStudio.tsx`.
 - Vercel configuration exists, but no Vercel project authorization or custom domain configuration was verified.
 
 ## Required resolution

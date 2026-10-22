@@ -11,14 +11,16 @@ npm install
 npm run dev
 ```
 
-Open the local URL Vite prints in the terminal. To verify code changes:
+Open the local URL Vite prints in the terminal. During the latest local verification, Kijiji Connect was served at `http://localhost:5173/`. If that URL is already open and responding, reuse it instead of starting a second development server.
+
+To verify code changes:
 
 ```powershell
 npm run lint
 npm run build
 ```
 
-The project does not currently define an automated test command.
+The latest production build passed. Lint exits successfully but currently reports one non-blocking React effect warning in `src/components/TravelPlanningStudio.tsx`. The project does not currently define an automated test command.
 
 ## 2. Check whether you already have Supabase
 

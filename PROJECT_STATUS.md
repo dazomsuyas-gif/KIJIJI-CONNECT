@@ -13,11 +13,19 @@ Last reviewed: 2026-10-22
 
 ## Verified state
 
-- Latest known build: passed with `npm run build`; Supabase client is split from the initial bundle.
-- Latest known lint: exited successfully with one non-blocking `react(set-state-in-effect)` warning in `src/components/TravelPlanningStudio.tsx`.
+- Latest production build: passed with `npm run build` after the contact changes; the Supabase client remains split from the initial bundle.
+- Latest lint: exited successfully with one non-blocking `react(set-state-in-effect)` warning in `src/components/TravelPlanningStudio.tsx`.
+- `git diff --check` passed. Git reported only its existing LF-to-CRLF working-copy notice for `src/App.tsx`.
 - No automated test script is configured in `package.json`.
-- Git baseline: `9d26acb` on `main`, tracking `origin/main`.
-- Local Supabase scaffold edits already present before this status update are uncommitted. They are preserved; do not discard them.
+- Git baseline before current verification: `31baacb` on `main`, tracking `origin/main`.
+- Workspace changes for current stability verification are local and uncommitted. They are preserved; do not discard them.
+- The existing Vite server on `http://localhost:5173/` (PID 21676) returned HTTP 200 and the Kijiji Connect page title during the latest check.
+- Browser-verified marketplace behavior: 6 initial sample listings; B2B and B2C each show 5; Electronics shows 1; a no-match search shows 0. A temporary local listing was added with the expected “Contact to confirm” stock state, then removed. The checkout required a mobile number and explicitly stated that it was simulation-only; no payment provider was contacted. Browser-local test data was restored afterward.
+- Browser-verified travel behavior: stay, flight and package tabs each show illustrative options; an Arusha stay enquiry generated review-only WhatsApp/email drafts and clearly stated that no reservation or message was made. The local itinerary builder produced a plan. Test data was restored afterward.
+- Browser-verified language behavior: the English A1 practice assessment passed at 3/3, writing practice saved locally, and both were restored after the test. The result is not a certificate or official CEFR assessment.
+- Browser-verified local workflows: AI Studio content draft, community post, and order-follow-up demo workflow were created and removed/restored without publishing or sending anything externally.
+- All 12 primary navigation links resolve to existing sections. Desktop (1280 px) and mobile (390 px) viewport checks found no horizontal overflow. Browser console errors, page errors, and failed requests were zero during the reload/viewport check. The local logo and image assets returned HTTP 200.
+- All supplied contact destinations were present in the rendered page, including `https://wa.me/255768868546`, the three exact email addresses, and both Instagram profiles.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
 - The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
 - Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
@@ -48,3 +56,4 @@ The user must sign in to the Supabase dashboard and check whether an intended pr
 - Added auth-specific styles and replaced the hard-coded demo account identity in the account area.
 - Updated README and setup/known-issues docs to describe the auth capability and limits.
 - No environment configuration or database was changed.
+- Centralized public phone/WhatsApp, email and Instagram values and corrected the secondary email to the exact user-supplied `kelvinmsuya63@gmai.com`.

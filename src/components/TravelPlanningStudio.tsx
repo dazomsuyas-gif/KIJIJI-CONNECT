@@ -5,6 +5,7 @@ import {
   type TravelOffer,
   type TravelType,
 } from '../services/travelCatalog'
+import { businessContact, businessSupportEmail } from '../config/contact'
 
 export type TravelBookingRequest = {
   id: string
@@ -41,8 +42,6 @@ const dateOffset = (days: number) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const contactEmail = 'dazomsuyas@gmail.com'
-
 function createBookingContactLinks(
   offer: TravelOffer,
   request: TravelBookingRequest,
@@ -63,8 +62,8 @@ function createBookingContactLinks(
   ].filter(Boolean).join('\n')
 
   return {
-    whatsapp: `https://wa.me/255768868546?text=${encodeURIComponent(message)}`,
-    email: `mailto:${contactEmail}?subject=${encodeURIComponent(`Travel enquiry · ${offer.name}`)}&body=${encodeURIComponent(message)}`,
+    whatsapp: `${businessContact.whatsappUrl}?text=${encodeURIComponent(message)}`,
+    email: `mailto:${businessSupportEmail}?subject=${encodeURIComponent(`Travel enquiry · ${offer.name}`)}&body=${encodeURIComponent(message)}`,
   }
 }
 

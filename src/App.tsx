@@ -2,6 +2,11 @@ import { useState, type FormEvent } from 'react'
 import './App.css'
 import { generateDemoContent } from './services/demoAi'
 import {
+  businessContact,
+  businessContactLinks,
+  businessSupportEmail,
+} from './config/contact'
+import {
   createDemoPayment,
   demoPaymentMethods,
   type DemoPaymentMethodId,
@@ -113,39 +118,6 @@ const categories = [
   'Office supplies',
   'Tourism products',
   'Other merchandise',
-]
-
-const contactLinks = [
-  {
-    label: 'WhatsApp',
-    value: '+255 768 868 546',
-    href: 'https://wa.me/255768868546',
-  },
-  {
-    label: 'Email',
-    value: 'msuyakelvin27@gmail.com',
-    href: 'mailto:msuyakelvin27@gmail.com',
-  },
-  {
-    label: 'Email',
-    value: 'kelvinmsuya63@gmail.com',
-    href: 'mailto:kelvinmsuya63@gmail.com',
-  },
-  {
-    label: 'Email',
-    value: 'dazomsuyas@gmail.com',
-    href: 'mailto:dazomsuyas@gmail.com',
-  },
-  {
-    label: 'Instagram',
-    value: '@mk_africa21',
-    href: 'https://instagram.com/mk_africa21',
-  },
-  {
-    label: 'Instagram',
-    value: '@kelvin_electronic_tz',
-    href: 'https://instagram.com/kelvin_electronic_tz',
-  },
 ]
 
 const quickPrompts = [
@@ -263,9 +235,9 @@ const tourismPlaces = [
 ]
 
 const whatsappUrl = (message: string) =>
-  `https://wa.me/255768868546?text=${encodeURIComponent(message)}`
+  `${businessContact.whatsappUrl}?text=${encodeURIComponent(message)}`
 
-const whatsappSupportUrl = whatsappUrl('Hello Kijiji Connect, I need support with selling or buying on the platform.')
+const whatsappSupportUrl = `${businessContact.whatsappUrl}?text=${encodeURIComponent('Hello Kijiji Connect, I need support with selling or buying on the platform.')}`
 
 const productsSeed: Product[] = [
   {
@@ -597,7 +569,7 @@ function App() {
       reply = 'Kijiji Connect demo support is not a live automated support desk. You can contact Kelvin directly using one of these links.'
       actions = [
         { label: 'WhatsApp support', href: whatsappSupportUrl },
-        { label: 'Email support', href: 'mailto:msuyakelvin27@gmail.com' },
+        { label: 'Email support', href: `mailto:${businessSupportEmail}` },
       ]
     } else {
       reply = 'I can help find marketplace listings, plan a stay or trip enquiry, navigate all sections, explore CEFR-informed language lessons, prepare business content, or reach customer support. Try “find avocado products”, “find a hotel in Arusha for 2 nights for 2 guests”, “start my Swahili learning path”, or “contact support”. I use local guidance—not a connected AI model. Nothing is booked or sent automatically.'
@@ -1147,7 +1119,7 @@ function App() {
                 Chat on WhatsApp
               </a>
               <div className="contact-list">
-                {contactLinks.map((item) => (
+                {businessContactLinks.map((item) => (
                   <a key={`${item.label}-${item.value}`} href={item.href} className="contact-item" target="_blank" rel="noreferrer">
                     <span className="contact-label">{item.label}</span>
                     <strong>{item.value}</strong>
@@ -1445,14 +1417,10 @@ function App() {
         <div className="footer-contact-block">
           <p>Business contact</p>
           <small>
-            <a href="https://wa.me/255768868546" target="_blank" rel="noreferrer">WhatsApp: +255 768 868 546</a>
+            <a href={businessContact.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp: {businessContact.phone}</a>
           </small>
-          <small>
-            <a href="mailto:msuyakelvin27@gmail.com">msuyakelvin27@gmail.com</a>
-          </small>
-          <small>
-            <a href="https://instagram.com/mk_africa21" target="_blank" rel="noreferrer">Instagram: @mk_africa21</a>
-          </small>
+          {businessContact.emails.map((email) => <small key={email}><a href={`mailto:${email}`}>{email}</a></small>)}
+          {businessContact.instagramHandles.map((handle) => <small key={handle}><a href={`https://instagram.com/${handle}`} target="_blank" rel="noreferrer">Instagram: @{handle}</a></small>)}
         </div>
       </footer>
     </div>
