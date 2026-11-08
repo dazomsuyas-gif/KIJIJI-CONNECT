@@ -1772,6 +1772,52 @@ function App() {
             </a>
           </div>
 
+          <div className="market-campaign">
+            <div className="market-campaign-copy">
+              <span className="market-campaign-kicker">Trade local. Grow together.</span>
+              <h1>Find products that move your business forward.</h1>
+              <p>Discover Tanzania-made goods, compare retail and wholesale options, and connect with sellers ready to share the next step.</p>
+              <div className="market-campaign-actions">
+                <a className="campaign-button" href="#catalog-search">Start exploring <span aria-hidden="true">→</span></a>
+                <a className="campaign-link" href="#product-listing-form">Sell on Kijiji Connect</a>
+              </div>
+              <div className="market-campaign-proof" aria-label="Marketplace highlights">
+                <span><strong>40+</strong> sample listings</span>
+                <span><strong>Local</strong> seller connections</span>
+                <span><strong>Clear</strong> price labels</span>
+              </div>
+            </div>
+            <div className="market-campaign-art" aria-label="Marketplace product showcase">
+              <div className="campaign-orbit campaign-orbit-one" />
+              <div className="campaign-orbit campaign-orbit-two" />
+              <div className="campaign-device">
+                <div className="campaign-device-top"><span>kijiji</span><span>•••</span></div>
+                <div className="campaign-device-search">Search local products <span aria-hidden="true">⌕</span></div>
+                <div className="campaign-device-products">
+                  {products.slice(0, 3).map((product) => (
+                    <Link key={product.id} to={`/products/${product.id}`} className="campaign-mini-product">
+                      <img src={product.image} alt="" loading="lazy" />
+                      <span>{product.name}</span>
+                      <strong>{formatTzs(product.price)}</strong>
+                    </Link>
+                  ))}
+                </div>
+                <div className="campaign-device-bar" />
+                <div className="campaign-device-bar short" />
+              </div>
+              <div className="campaign-product-float campaign-product-float-left">
+                <img src={products[3]?.image ?? products[0]?.image} alt="" loading="lazy" />
+                <span>Fresh from Tanzania</span>
+              </div>
+              <div className="campaign-product-float campaign-product-float-right">
+                <span className="campaign-star" aria-hidden="true">✦</span>
+                <strong>Trusted<br />connections</strong>
+              </div>
+              <span className="campaign-spark campaign-spark-one" aria-hidden="true">✦</span>
+              <span className="campaign-spark campaign-spark-two" aria-hidden="true">✦</span>
+            </div>
+          </div>
+
           <p className="phase-note">The catalogue contains more than 40 illustrative examples, not verified supplier offers. Sample prices and stock labels are placeholders; confirm availability and pricing directly with sellers. Sample catalogue date: {catalogueLastUpdated}. Search and filter settings can be shared as a URL.</p>
 
           <div className="market-search-panel">
