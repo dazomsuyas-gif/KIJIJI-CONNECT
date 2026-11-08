@@ -12,6 +12,17 @@ This roadmap compares the requested target with the existing implementation. Pre
 - [x] Improve orders/delivery and shared surfaces with consistent stepper/cards, responsive controls, accessible states and locally served imagery.
 - [x] Add a tester guide route/document, structured SEO metadata and release-quality browser checks without claiming unavailable provider integrations.
 
+## Polish and Launch Readiness
+
+- [x] Add Playwright browser coverage with real user interactions for the core marketplace, delivery, seller, travel, learning, assistant, theme, mobile navigation and 404 flows.
+- [x] Add axe checks and keyboard-only coverage, then verify the required 320, 390, 768, 1280 and 1920px viewports have no horizontal overflow.
+- [x] Complete the reusable UI layer (form controls, modal, tabs, toast, skeleton, pagination, breadcrumbs, tooltip and table) using the existing token system.
+- [x] Finish the first honest browser-local `/stories` draft/moderation surface and cover it with a real browser test; community posting remains local and threaded/reaction work is still open.
+- [ ] Replace the inline delivery SVG with a Leaflet/OpenStreetMap adapter and retain a graceful offline destination-only fallback.
+- [ ] Split the large application shell and shared stylesheet into feature modules without changing existing routes or local workflows.
+- [ ] Add real local photography coverage and credits for hero, marketplace, travel and community surfaces; never hotlink remote images.
+- [ ] Run and record real E2E, axe and Lighthouse results; document provider-dependent work as not connected.
+
 ## Phase 1 — Routes, reliability and shared UI foundation
 
 - [x] Preserve the existing React 19, TypeScript, Vite, React Router application and current local server.

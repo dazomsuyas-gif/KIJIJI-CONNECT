@@ -23,6 +23,7 @@ import {
 } from './services/languageLearning'
 import { LanguageLearningStudio } from './components/LanguageLearningStudio'
 import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
+import { StoriesPage } from './components/StoriesPage'
 import { getRouteForPath, getRouteForTarget } from './config/routes'
 import { translations, type AppLanguage } from './config/translations'
 import { storageRepository } from './services/storageRepository'
@@ -161,6 +162,7 @@ const navItems = [
   { label: 'Business tools', href: '/business-tools' },
   { label: 'AI Studio', href: '/ai-studio' },
   { label: 'Community', href: '/community' },
+  { label: 'Stories', href: '/stories' },
   { label: 'Payments', href: '/payments' },
   { label: 'Integrations', href: '/integrations' },
   { label: 'Destinations', href: '/destinations' },
@@ -419,6 +421,15 @@ function App() {
     }
     previousPathnameRef.current = location.pathname
   }, [location.pathname, location.search, navigationType])
+
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileNavOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [mobileNavOpen])
 
   useEffect(() => {
     const route = getRouteForPath(location.pathname)
@@ -1452,6 +1463,7 @@ function App() {
         ) : (
           <>
         {storageError && <p className="storage-error" role="alert">{storageError}</p>}
+        {location.pathname === '/stories' && <StoriesPage />}
         {standalonePage && (
           <Suspense fallback={<p className="loading-state" role="status">Loading this page…</p>}>
             <StandalonePages

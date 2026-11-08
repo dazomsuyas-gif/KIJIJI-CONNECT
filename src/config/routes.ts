@@ -6,6 +6,7 @@ export type AppPageId =
   | 'automation'
   | 'ai-studio'
   | 'community'
+  | 'stories'
   | 'payments'
   | 'integrations'
   | 'destinations'
@@ -41,6 +42,7 @@ export const appRoutes: AppRoute[] = [
   { path: '/business-tools', page: 'automation', sectionId: 'automation', title: 'Business tools' },
   { path: '/ai-studio', page: 'ai-studio', sectionId: 'ai-studio', title: 'AI Studio' },
   { path: '/community', page: 'community', sectionId: 'community', title: 'Community' },
+  { path: '/stories', page: 'stories', sectionId: 'stories', title: 'Stories' },
   { path: '/payments', page: 'payments', sectionId: 'payments', title: 'Payments' },
   { path: '/integrations', page: 'integrations', sectionId: 'integrations', title: 'Integrations' },
   { path: '/destinations', page: 'destinations', sectionId: 'tourism-heritage', title: 'Destinations' },

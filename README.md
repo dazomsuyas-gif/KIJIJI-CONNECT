@@ -27,7 +27,7 @@ Authentication requests cannot be live-tested until valid project settings are c
 - Business automation: run local examples for order follow-up, low-stock reminders and content repurposing; no outside messages or systems are triggered.
 - Language learning: practise original starter lessons in English, French, Mandarin Chinese and Kiswahili, with a seven-stage pathway, short quizzes, local progress and writing drafts. The pathway is CEFR-informed, not a complete curriculum, official Mandarin/HSK mapping, accredited test or proficiency certificate; its native/beyond stage sits outside the CEFR.
 - Travel planning: browse sample flight routes, illustrative Arusha stay prices and tour ideas, estimate a trip, and prepare a user-reviewed WhatsApp or email enquiry. Listings, prices and availability are examples only; the form does not make a reservation or contact a provider. Use the enquiry links only after reviewing the details.
-- Community: create discussion posts stored in this browser only.
+- Community: create discussion posts stored in this browser only. `/stories` provides local story drafts with English/Kiswahili selection, bounded cover previews and a moderation-queue label; it is not public publishing.
 - Tourism and heritage: browse sample destination cards. Confirm travel details with official operators.
 - Site-wide guided assistant: available from the floating chat launcher and assistant section. Local intent matching can search listings, open travel and language sections, prepare forms or drafts for review, run explicitly requested local workflow previews, and open an unsubmitted sandbox checkout for a matched listing. It does not call an AI model or send messages, and cannot access live travel inventory.
 - Notifications and account overview: show activity and browser-local demo data.
@@ -43,7 +43,7 @@ npm test
 npm run build
 ```
 
-Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, delivery state helpers, backend readiness and the simulated cart/order workflow. The manual browser checklist is available at `/test-guide` and `TESTING.md`; end-to-end Playwright tests have not yet been added.
+Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, delivery state helpers, backend readiness and the simulated cart/order workflow. Playwright covers desktop/mobile marketplace, checkout, seller dispatch, delivery balance, travel, learning, assistant, stories/community, dark mode, keyboard focus, 404 and overflow checks; the manual browser checklist is available at `/test-guide` and `TESTING.md`.
 
 The current route foundation displays the existing section-based modules at separate URLs. Cart and simulated-order history are local features within Marketplace and Payments, not independent server-backed routes. Product detail pages, secure order lifecycle, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
 

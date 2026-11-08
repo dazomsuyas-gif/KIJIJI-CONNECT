@@ -17,7 +17,7 @@ Last reviewed: 2026-11-08
 - Travel enquiries only prepare user-reviewed WhatsApp/email drafts; they do not contact providers, reserve inventory, or confirm a booking.
 - The assistant is local intent matching, not an AI model, WhatsApp bot, or autonomous agent. It supports confirm/cancel and 30-second undo for local seller-owned price/stock changes, can prepare a cart draft from a quantity request, and now exposes typed local tool contracts for products, travel, lessons, tickets and review-only handoffs. The audit log is browser-local and not a security record. Live model calls and automatic handoff are not implemented.
 - Intent resolution now uses a swappable `AssistantProvider` boundary and includes tested common Kiswahili navigation/support phrases. The active provider remains local rules; no remote model is configured or called.
-- Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, not-found rendering, and sample marketplace catalogue/filter behavior. Automated browser end-to-end coverage has not yet been added.
+- Vitest/Testing Library cover route configuration, local storage, direct-route rendering, navigation, not-found rendering, and sample marketplace catalogue/filter behavior. Playwright now covers the core desktop/mobile flows and axe checks; Lighthouse has not yet been run.
 - The app uses one shared shell; new standalone routes are lazy-loaded views within that shell rather than independent deployments. Seller/admin pages are safety-labeled previews only and are not protected workflows.
 - The product catalogue contains more than 40 illustrative examples with placeholder prices and sample availability. Supplier inventory, ratings, and prices are not verified live data.
 - Marketplace search, category/audience/location/price/availability filters, sorting and pagination are URL-synced but still operate on local illustrative data. Product detail/specifications, related products, supplier sample profiles, enquiry-only quote links, local cart and simulated order history are available. These are browser-local previews, not real transactions or verified inventory. Secure order lifecycle and server-persisted seller workflows remain unimplemented.
@@ -29,6 +29,7 @@ Last reviewed: 2026-11-08
 - Learning practice streaks are stored as browser-local calendar days after passed assessments; they are not account-backed, cross-device, or an official learning record.
 - Delivery places, partial-payment balances, sender acceptance, dispatch and Arusha tracking points are browser-local simulation data. No money is settled, no sender is notified, and no live driver/device GPS is connected.
 - The Arusha map is a local coordinate visualization with review links. Live tile maps, courier telemetry, route updates and geofencing require a configured mapping/logistics provider.
+- Stories and community drafts/posts are browser-local. The story cover preview is bounded to 512 KB and is not uploaded; moderation labels do not publish content to other users.
 
 ## Quality and operations
 

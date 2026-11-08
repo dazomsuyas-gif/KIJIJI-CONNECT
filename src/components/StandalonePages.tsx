@@ -53,6 +53,7 @@ export type StandalonePageId =
   | 'privacy'
   | 'terms'
   | 'test-guide'
+  | 'stories'
 
 export type StandaloneCartLine = {
   product: Product

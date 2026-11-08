@@ -9,12 +9,15 @@ The in-app checklist is available at `/test-guide`.
 npm.cmd run lint
 npm.cmd test -- --run
 npm.cmd run build
+npm.cmd run test:e2e
 ```
 
-The current automated suite uses Vitest and Testing Library. It verifies route
+The automated suite uses Vitest, Testing Library and Playwright. It verifies route
 rendering, local persistence, marketplace filters, cart/checkout simulation,
 seller and moderation boundaries, assistant confirmations, learning progress,
-backend not-configured behavior, and Arusha delivery state helpers.
+backend not-configured behavior, Arusha delivery state helpers, real browser
+interactions and axe checks. Playwright runs Chromium at desktop and 390px
+mobile dimensions with one worker for deterministic local-storage workflows.
 
 ## Manual browser flows
 
@@ -24,6 +27,8 @@ backend not-configured behavior, and Arusha delivery state helpers.
 - Travel offer filtering, dates, guests, itinerary and review-only handoff.
 - Language flashcard, assessment pass and local practice streak.
 - Assistant confirmation, cancellation and Undo.
+- Stories: save a local English/Kiswahili draft, preview a bounded cover image,
+  and confirm the pending moderation label. Community posts remain browser-local.
 - Mobile navigation at 320px and 390px, dark mode and unknown routes.
 
 ## Honest provider status
