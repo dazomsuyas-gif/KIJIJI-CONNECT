@@ -28,6 +28,7 @@ This roadmap compares the requested target with the existing implementation. Pre
 - [x] Expand to 41 illustrative products; add URL-synced search, audience/category/location/price/availability filters, sorting and pagination.
 - [x] Add a browser-local cart and explicitly simulated checkout/order log.
 - [x] Capture an Arusha delivery place/landmark, simulated paid balance, sender acceptance, dispatch and delivery states with coordinate review.
+- [x] Add an inline coordinate-based Arusha destination map with City Centre, Clock Tower, Sakina, Njiro, Tengeru, Usa River, Kisongo, Kijenge, Olasiti, Moshono, Lemara and Ilboru.
 - [x] Add a typed local listing repository boundary with explicit local-owner checks and browser persistence.
 - [x] Add basic product detail/specifications/related listings, sample supplier profiles and user-directed quote handoff.
 - [x] Add product image gallery and order timeline/print receipt; any status updates remain demo-only.

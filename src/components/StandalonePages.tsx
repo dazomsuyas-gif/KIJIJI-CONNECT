@@ -8,6 +8,37 @@ import { moderationStatusFor, type DemoRole, type ModerationRecord, type Moderat
 import { arushaDeliveryPlaces, deliveryStatusIndex, deliveryStatusLabel, type DeliveryStatus } from '../services/deliveryTracking'
 import { Stepper } from './ui'
 
+function ArushaDeliveryMap({ selectedPlace }: { selectedPlace: string }) {
+  const minLatitude = -3.44
+  const maxLatitude = -3.32
+  const minLongitude = 36.57
+  const maxLongitude = 36.88
+  const xFor = (longitude: number) => 8 + ((longitude - minLongitude) / (maxLongitude - minLongitude)) * 84
+  const yFor = (latitude: number) => 92 - ((latitude - minLatitude) / (maxLatitude - minLatitude)) * 84
+
+  return (
+    <div className="arusha-map" role="img" aria-label="Arusha delivery destination map">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <path className="arusha-map__road" d="M5 72 C28 54 35 62 52 43 S76 23 96 10" />
+        <path className="arusha-map__road arusha-map__road--secondary" d="M8 16 C25 30 33 46 46 55 S74 66 94 91" />
+        {arushaDeliveryPlaces.map((place) => {
+          const selected = place.name === selectedPlace
+          return (
+            <g key={place.id} transform={`translate(${xFor(place.longitude)} ${yFor(place.latitude)})`}>
+              <circle className={selected ? 'arusha-map__marker arusha-map__marker--selected' : 'arusha-map__marker'} r={selected ? 2.8 : 1.8} />
+              <title>{`${place.name} · ${place.latitude}, ${place.longitude}`}</title>
+            </g>
+          )
+        })}
+      </svg>
+      <div className="arusha-map__labels">
+        <strong>Arusha delivery destination</strong>
+        <span>{selectedPlace} is selected. Points show supported local delivery areas.</span>
+      </div>
+    </div>
+  )
+}
+
 export type StandalonePageId =
   | 'product-detail'
   | 'supplier-profile'
@@ -59,12 +90,12 @@ type StandalonePagesProps = {
   onCheckout: () => void
   onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
   onDeleteProduct: (productId: number) => void
+  onUpdateOrderDelivery: (orderId: string, status: DeliveryStatus) => void
   assistantAuditLog: AssistantAuditEntry[]
   demoRole: DemoRole
   moderationRecords: ModerationRecord[]
   onDemoRoleChange: (role: DemoRole) => void
   onModerationChange: (productId: number, status: ModerationStatus) => boolean
-  onUpdateOrderDelivery: (orderId: string, status: DeliveryStatus) => void
 }
 
 const price = (amount: number) => new Intl.NumberFormat('en-TZ', {
@@ -185,11 +216,12 @@ function SellerListingEditor({ product, onUpdate, onDelete }: {
   )
 }
 
-function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct }: {
+function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct, onUpdateOrderDelivery }: {
   products: Product[]
   orders: StandaloneOrder[]
   onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
   onDeleteProduct: (productId: number) => void
+  onUpdateOrderDelivery: (orderId: string, status: DeliveryStatus) => void
 }) {
   const ownListings = products.filter((product) =>
     product.isDemoUserListing && product.ownerId === localDemoSellerId,
@@ -205,6 +237,22 @@ function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct }:
         <article className="phase-card"><h2>Your sample listings</h2><p>{ownListings.length} local listings · {lowStockCount} low-stock alert(s)</p></article>
         <article className="phase-card"><h2>Demo order records</h2><p>{orders.length} simulated records. This preview does not calculate verified sales or fulfilment.</p><Link to="/orders">View demo order history</Link></article>
       </div>
+      {orders.length > 0 && <section className="phase-card seller-orders" aria-labelledby="seller-orders-heading">
+        <h2 id="seller-orders-heading">Orders awaiting sender action</h2>
+        <div className="seller-order-list">
+          {orders.map((order) => {
+            const status = order.deliveryStatus ?? 'pending-sender'
+            return (
+              <article className="seller-order-row" key={order.id}>
+                <div><strong>{order.reference}</strong><span>{order.lines.map((line) => `${line.productName} × ${line.quantity}`).join(', ')}</span><span>{order.deliveryPlaceName ?? 'Arusha City Centre'} · Balance {price(order.balanceAmount ?? 0)}</span></div>
+                <span className="payment-demo-tag">{deliveryStatusLabel(status)}</span>
+                {status === 'pending-sender' && <button className="secondary-button" type="button" onClick={() => onUpdateOrderDelivery(order.id, 'accepted')}>Accept good</button>}
+                {status === 'accepted' && <button className="primary-button" type="button" onClick={() => onUpdateOrderDelivery(order.id, 'sent')}>Send good</button>}
+              </article>
+            )
+          })}
+        </div>
+      </section>}
       {ownListings.length === 0
         ? <p className="empty-state">No local listings yet. <Link to="/marketplace">Create a sample listing in Marketplace</Link></p>
         : <div className="phase-list">{ownListings.map((product) => <SellerListingEditor
@@ -296,7 +344,7 @@ export function StandalonePages(props: StandalonePagesProps) {
                   </div>
                   {demoRole !== 'viewer' && deliveryStatus !== 'delivered' && <button type="button" className="secondary-button" onClick={() => onUpdateOrderDelivery(order.id, deliveryStatus === 'pending-sender' ? 'accepted' : 'sent')}>{deliveryStatus === 'pending-sender' ? 'Accept order as sender' : 'Mark sent by sender'}</button>}
                   {deliveryStatus === 'sent' && <button type="button" className="primary-button" onClick={() => onUpdateOrderDelivery(order.id, 'delivered')}>Confirm delivery received</button>}
-                  {deliveryStatus === 'sent' && <div className="gps-tracking-card"><strong>Arusha delivery tracking</strong><span>Tracking is local preview data, not a live device GPS feed.</span><div className="gps-grid">{arushaDeliveryPlaces.map((deliveryPlace) => <span className={deliveryPlace.name === place ? 'gps-point selected' : 'gps-point'} key={deliveryPlace.id} title={`${deliveryPlace.latitude}, ${deliveryPlace.longitude}`}>{deliveryPlace.name}</span>)}</div></div>}
+                  <div className="gps-tracking-card"><strong>Delivery destination</strong><span>{deliveryStatus === 'sent' || deliveryStatus === 'delivered' ? 'Dispatch recorded. This is a destination map, not live driver GPS.' : 'Live driver tracking activates only after a connected courier provider dispatches the order.'}</span><ArushaDeliveryMap selectedPlace={place} /><div className="gps-grid">{arushaDeliveryPlaces.map((deliveryPlace) => <span className={deliveryPlace.name === place ? 'gps-point selected' : 'gps-point'} key={deliveryPlace.id} title={`${deliveryPlace.latitude}, ${deliveryPlace.longitude}`}>{deliveryPlace.name}</span>)}</div></div>
                 </>
               )
             })()}
@@ -309,7 +357,7 @@ export function StandalonePages(props: StandalonePagesProps) {
   }
 
   if (page === 'seller-dashboard') {
-    return <SellerDashboard products={products} orders={orders} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} />
+    return <SellerDashboard products={products} orders={orders} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} onUpdateOrderDelivery={onUpdateOrderDelivery} />
   }
 
   if (page === 'admin') {

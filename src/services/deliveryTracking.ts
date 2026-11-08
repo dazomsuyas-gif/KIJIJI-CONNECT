@@ -17,6 +17,10 @@ export const arushaDeliveryPlaces: ArushaDeliveryPlace[] = [
   { id: 'usa-river', name: 'Usa River', area: 'Arumeru', latitude: -3.3667, longitude: 36.8500 },
   { id: 'kisongo', name: 'Kisongo', area: 'West Arusha', latitude: -3.3900, longitude: 36.6000 },
   { id: 'kijenge', name: 'Kijenge', area: 'North Arusha', latitude: -3.3558, longitude: 36.6940 },
+  { id: 'olasiti', name: 'Olasiti', area: 'North-east Arusha', latitude: -3.3352, longitude: 36.7212 },
+  { id: 'moshono', name: 'Moshono', area: 'East Arusha', latitude: -3.3677, longitude: 36.7445 },
+  { id: 'lemara', name: 'Lemara', area: 'South-east Arusha', latitude: -3.4140, longitude: 36.7297 },
+  { id: 'ilboru', name: 'Ilboru', area: 'North-west Arusha', latitude: -3.3358, longitude: 36.6505 },
 ]
 
 export function deliveryStatusLabel(status: DeliveryStatus): string {

@@ -455,6 +455,80 @@ textarea {
   margin-top: 0.5rem;
 }
 
+.arusha-map {
+  display: grid;
+  gap: var(--space-3);
+  overflow: hidden;
+  border: 1px solid #c8d8cf;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(229, 241, 233, 0.9), rgba(247, 244, 234, 0.95));
+}
+
+.arusha-map svg {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+}
+
+.arusha-map__road {
+  fill: none;
+  stroke: rgba(138, 100, 28, 0.55);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.arusha-map__road--secondary {
+  stroke: rgba(70, 105, 84, 0.55);
+  stroke-dasharray: 2 2;
+}
+
+.arusha-map__marker {
+  fill: var(--color-forest-700);
+  stroke: var(--color-white);
+  stroke-width: 0.8;
+}
+
+.arusha-map__marker--selected {
+  fill: var(--color-error);
+  stroke-width: 1.2;
+}
+
+.arusha-map__labels {
+  display: grid;
+  gap: 2px;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.arusha-map__labels span {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.seller-order-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.seller-order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid #d5dde5;
+  border-radius: var(--radius-md);
+}
+
+.seller-order-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.seller-order-row > span {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .gps-point {
   padding: 0.55rem;
   border: 1px solid #d5dde5;
@@ -1751,6 +1825,10 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .seller-order-row {
+    grid-template-columns: 1fr;
+  }
+
   .topbar,
   .page-shell,
   .page-footer {

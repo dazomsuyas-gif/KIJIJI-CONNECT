@@ -28,6 +28,7 @@ Last reviewed: 2026-11-08
 - The professional light/dark theme is implemented locally; it does not imply a user account preference synced across devices.
 - Learning practice streaks are stored as browser-local calendar days after passed assessments; they are not account-backed, cross-device, or an official learning record.
 - Delivery places, partial-payment balances, sender acceptance, dispatch and Arusha tracking points are browser-local simulation data. No money is settled, no sender is notified, and no live driver/device GPS is connected.
+- The Arusha map is a local coordinate visualization with review links. Live tile maps, courier telemetry, route updates and geofencing require a configured mapping/logistics provider.
 
 ## Quality and operations
 
