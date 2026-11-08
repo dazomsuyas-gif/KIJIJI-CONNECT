@@ -1772,19 +1772,19 @@ function App() {
             </a>
           </div>
 
-          <div className="market-campaign">
+          <div className="market-campaign market-campaign--style">
             <div className="market-campaign-copy">
-              <span className="market-campaign-kicker">Trade local. Grow together.</span>
-              <h1>Find products that move your business forward.</h1>
-              <p>Discover Tanzania-made goods, compare retail and wholesale options, and connect with sellers ready to share the next step.</p>
+              <span className="market-campaign-kicker">Style, trade and discover.</span>
+              <h1>New finds for every kind of business.</h1>
+              <p>Browse a fresh collection of Tanzania-made goods, compare prices and connect directly with local sellers.</p>
               <div className="market-campaign-actions">
                 <a className="campaign-button" href="#catalog-search">Start exploring <span aria-hidden="true">→</span></a>
                 <a className="campaign-link" href="#product-listing-form">Sell on Kijiji Connect</a>
               </div>
               <div className="market-campaign-proof" aria-label="Marketplace highlights">
                 <span><strong>40+</strong> sample listings</span>
-                <span><strong>Local</strong> seller connections</span>
-                <span><strong>Clear</strong> price labels</span>
+                <span><strong>Retail</strong> and wholesale</span>
+                <span><strong>Local</strong> sellers</span>
               </div>
             </div>
             <div className="market-campaign-art" aria-label="Marketplace product showcase">
