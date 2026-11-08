@@ -17,6 +17,7 @@ type LanguageLearningStudioProps = {
   onPlacementSuggestion: (levelId: LearningLevelId) => void
   writingDrafts: Record<string, string>
   onSaveWriting: (lessonId: string, text: string) => void
+  practiceStreak: number
 }
 
 function getLessonId(languageId: string, levelId: LearningLevelId) {
@@ -34,6 +35,7 @@ export function LanguageLearningStudio({
   onPlacementSuggestion,
   writingDrafts,
   onSaveWriting,
+  practiceStreak,
 }: LanguageLearningStudioProps) {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [quizResult, setQuizResult] = useState('')
@@ -42,6 +44,7 @@ export function LanguageLearningStudio({
   const [placementAnswers, setPlacementAnswers] = useState([-1, -1, -1])
   const [editingWriting, setEditingWriting] = useState<{ lessonId: string; text: string }>({ lessonId: '', text: '' })
   const [writingResult, setWritingResult] = useState('')
+  const [flashcardRevealed, setFlashcardRevealed] = useState(false)
 
   const course = languageCourses.find((item) => item.id === languageId) ?? languageCourses[0]
   const currentLevel = course.levels.find((item) => item.id === levelId) ?? course.levels[0]
@@ -61,6 +64,7 @@ export function LanguageLearningStudio({
     setAnswers({})
     setQuizResult('')
     setListenMessage('')
+    setFlashcardRevealed(false)
   }
 
   const handleListen = () => {
@@ -184,7 +188,7 @@ export function LanguageLearningStudio({
           </select>
         </label>
         <div className="learning-progress" aria-label={`${completeCount} of ${course.levels.length} modules passed`}>
-          <div><strong>{completeCount} / {course.levels.length} modules passed</strong><span>{progressPercent}% pathway progress</span></div>
+          <div><strong>{completeCount} / {course.levels.length} modules passed</strong><span>{progressPercent}% pathway progress · {practiceStreak} day streak</span></div>
           <div className="progress-track"><span style={{ width: `${progressPercent}%` }} /></div>
         </div>
       </div>
@@ -248,6 +252,18 @@ export function LanguageLearningStudio({
             <small><strong>Try it:</strong> {currentLevel.scenario}</small>
           </article>
         </div>
+
+        <section className="learning-flashcard" aria-labelledby="flashcard-heading">
+          <div>
+            <span className="learning-example__label">Spaced review</span>
+            <h3 id="flashcard-heading">Recall this phrase</h3>
+            <p className="learning-flashcard__prompt" lang={course.speechLocale}>{flashcardRevealed ? currentLevel.phrase : currentLevel.translation}</p>
+            {flashcardRevealed && <small>{currentLevel.pronunciation}</small>}
+          </div>
+          <button type="button" className="secondary-button" onClick={() => setFlashcardRevealed((current) => !current)}>
+            {flashcardRevealed ? 'Hide answer' : 'Reveal answer'}
+          </button>
+        </section>
 
         <form className="learning-writing" onSubmit={handleSaveWriting}>
           <label htmlFor="learning-writing">Writing practice</label>

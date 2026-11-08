@@ -1,0 +1,80 @@
+:root {
+  --font-body: "Times New Roman", Times, serif;
+  --font-heading: "Times New Roman", Times, serif;
+  --font-mono: Consolas, "Courier New", monospace;
+
+  --color-forest-950: #102a1f;
+  --color-forest-900: #173c2b;
+  --color-forest-800: #23543d;
+  --color-forest-700: #2e6a4d;
+  --color-forest-100: #e5f1e9;
+  --color-cream-50: #fffdf9;
+  --color-cream-100: #f7f4ea;
+  --color-cream-200: #eee9dc;
+  --color-gold-700: #8a641c;
+  --color-gold-500: #c49a4a;
+  --color-gold-100: #fbf2d9;
+  --color-slate-950: #17212b;
+  --color-slate-700: #465362;
+  --color-slate-500: #667382;
+  --color-slate-300: #c9d1d8;
+  --color-slate-100: #eef2f4;
+  --color-white: #ffffff;
+  --color-success: #176b3a;
+  --color-success-soft: #e5f5eb;
+  --color-warning: #855b00;
+  --color-warning-soft: #fff4d6;
+  --color-error: #a32929;
+  --color-error-soft: #fde7e7;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 2px 8px rgba(16, 42, 31, 0.08);
+  --shadow-md: 0 8px 24px rgba(16, 42, 31, 0.12);
+  --shadow-lg: 0 18px 48px rgba(16, 42, 31, 0.16);
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: clamp(2rem, 4vw, 3.5rem);
+
+  --z-base: 1;
+  --z-sticky: 20;
+  --z-drawer: 40;
+  --z-modal: 60;
+  --z-toast: 80;
+  --transition-fast: 160ms ease;
+  --transition-base: 220ms ease;
+
+  --color-forest: var(--color-forest-900);
+  --color-forest-deep: var(--color-forest-950);
+  --color-cream: var(--color-cream-100);
+  --color-paper: var(--color-cream-50);
+  --color-gold: var(--color-gold-500);
+  --color-ink: var(--color-slate-950);
+  --color-muted: var(--color-slate-500);
+  --focus-ring: #9c5e1f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

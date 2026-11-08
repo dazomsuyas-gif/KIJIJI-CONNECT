@@ -24,6 +24,7 @@ export type AppPageId =
   | 'faq'
   | 'privacy'
   | 'terms'
+  | 'test-guide'
 
 export type AppRoute = {
   path: string
@@ -56,6 +57,7 @@ export const appRoutes: AppRoute[] = [
   { path: '/faq', page: 'faq', sectionId: 'faq-page', title: 'Frequently asked questions' },
   { path: '/privacy', page: 'privacy', sectionId: 'privacy-page', title: 'Privacy notice' },
   { path: '/terms', page: 'terms', sectionId: 'terms-page', title: 'Terms of use' },
+  { path: '/test-guide', page: 'test-guide', sectionId: 'test-guide-page', title: 'Testing guide' },
 ]
 
 export function getRouteForPath(pathname: string) {

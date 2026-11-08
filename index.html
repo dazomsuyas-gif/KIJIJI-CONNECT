@@ -3,16 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/kijiji-connect-logo.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#173c2b" />
     <meta name="description" content="Explore Tanzanian businesses and local products, practise languages with CEFR-informed lessons, and plan a trip with illustrative travel examples from Kijiji Connect." />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Kijiji Connect | Trade, travel and learning in Tanzania" />
     <meta property="og:description" content="Explore local trade, structured language practice, and Tanzania travel-planning examples." />
+    <meta property="og:image" content="/tanzania-landscape.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/tanzania-landscape.jpg" />
     <title>Kijiji Connect | Trade, Travel &amp; Learning in Tanzania</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"WebSite","name":"Kijiji Connect","description":"Tanzania-connected marketplace, travel planning and language learning.","url":"http://localhost:5173/"}
+    </script>
   </body>
 </html>

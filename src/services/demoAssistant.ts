@@ -36,23 +36,23 @@ export type DemoAssistantIntent =
   | { type: 'help' }
 
 const sectionAliases: Record<AssistantSection, string[]> = {
-  home: ['home', 'homepage', 'start'],
-  marketplace: ['marketplace', 'market', 'product', 'listing', 'seller', 'buy', 'sell', 'quote', 'supplier'],
-  payments: ['payment', 'checkout', 'pay', 'money'],
+  home: ['home', 'homepage', 'start', 'nyumbani', 'mwanzo'],
+  marketplace: ['marketplace', 'market', 'product', 'listing', 'seller', 'buy', 'sell', 'quote', 'supplier', 'soko', 'bidhaa', 'muuzaji', 'nunua', 'uza'],
+  payments: ['payment', 'checkout', 'pay', 'money', 'malipo', 'lipa'],
   'ai-studio': ['ai studio', 'content studio', 'draft', 'content', 'caption'],
   automation: ['automation', 'workflow', 'stock reminder', 'follow-up'],
-  'learn-languages': ['language', 'lesson', 'learn', 'learning'],
+  'learn-languages': ['language', 'lesson', 'learn', 'learning', 'lugha', 'somo', 'jifunze'],
   community: ['community', 'discussion', 'post'],
-  'travel-booking': ['booking', 'hotel', 'stay', 'flight', 'air ticket', 'airline', 'package', 'trip'],
+  'travel-booking': ['booking', 'hotel', 'stay', 'flight', 'air ticket', 'airline', 'package', 'trip', 'hoteli', 'malazi', 'ndege', 'safari', 'usafiri'],
   'tourism-heritage': ['tourism', 'heritage', 'travel', 'destination', 'safari'],
-  'ai-assistant': ['assistant', 'chatbot', 'chat'],
+  'ai-assistant': ['assistant', 'chatbot', 'chat', 'msaidizi'],
   notifications: ['notification', 'activity', 'alerts'],
-  'my-account': ['account', 'profile', 'dashboard'],
+  'my-account': ['account', 'profile', 'dashboard', 'akaunti', 'wasifu'],
 }
 
 export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
   const normalized = input.trim().toLowerCase()
-  const sectionRequest = /^(?:(?:please|can you|could you)\s+)?(?:go to|open|visit|take me to|navigate to|show me)\s+(?:the\s+)?(.+?)[.!?]*$/.exec(normalized)
+  const sectionRequest = /^(?:(?:please|can you|could you|nisaidie|tafadhali)\s+)?(?:go to|open|visit|take me to|navigate to|show me|kwenda kwenye|fungua|nionyeshe)\s+(?:the\s+)?(.+?)[.!?]*$/.exec(normalized)
 
   if (sectionRequest) {
     const requestedSection = sectionRequest[1]
@@ -94,11 +94,11 @@ export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
     }
   }
 
-  if (/\b(?:contact|support|help desk|email|whatsapp)\b/.test(normalized)) {
+  if (/\b(?:contact|support|help desk|email|whatsapp|wasiliana|msaada|barua pepe)\b/.test(normalized)) {
     return { type: 'contact' }
   }
 
-  if (/\b(?:plan|book|booking|reserve|trip|stay|hotel|flight|ticket|airline|package|airport|safari|tour)\b/.test(normalized)) {
+  if (/\b(?:plan|book|booking|reserve|trip|stay|hotel|flight|ticket|airline|package|airport|safari|tour|panga|weka nafasi|hifadhi|safari|ziara)\b/.test(normalized)) {
     return { type: 'navigate', section: 'travel-booking' }
   }
 
@@ -190,22 +190,22 @@ export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
     if (query) return { type: 'search', query }
   }
 
-  if (/\b(?:learn|language|lesson|swahili|french|mandarin)\b/.test(normalized)) {
+  if (/\b(?:learn|language|lesson|swahili|french|mandarin|jifunze|lugha|somo|kiswahili)\b/.test(normalized)) {
     return { type: 'navigate', section: 'learn-languages' }
   }
-  if (/\b(?:tourism|heritage|destination)\b/.test(normalized)) {
+  if (/\b(?:tourism|heritage|destination|utalii|urithi|mahali)\b/.test(normalized)) {
     return { type: 'navigate', section: 'tourism-heritage' }
   }
-  if (/\b(?:community|discussion)\b/.test(normalized)) {
+  if (/\b(?:community|discussion|jamii|mazungumzo)\b/.test(normalized)) {
     return { type: 'navigate', section: 'community' }
   }
-  if (/\b(?:notification|activity|alerts)\b/.test(normalized)) {
+  if (/\b(?:notification|activity|alerts|taarifa|shughuli)\b/.test(normalized)) {
     return { type: 'navigate', section: 'notifications' }
   }
-  if (/\b(?:account|profile|dashboard)\b/.test(normalized)) {
+  if (/\b(?:account|profile|dashboard|akaunti|wasifu)\b/.test(normalized)) {
     return { type: 'navigate', section: 'my-account' }
   }
-  if (/\b(?:payment|payments|mpesa|m-pesa|mobile money)\b/.test(normalized)) {
+  if (/\b(?:payment|payments|mpesa|m-pesa|mobile money|malipo|lipa)\b/.test(normalized)) {
     return { type: 'navigate', section: 'payments' }
   }
   if (/\b(?:automation|workflow|stock reminder|follow[\s-]?up)\b/.test(normalized)) {

@@ -1,15 +1,7 @@
+@import './styles/tokens.css';
+
 :root {
-  --font-body: 'Times New Roman', Times, serif;
-  --font-heading: 'Times New Roman', Times, serif;
   --font-sans: var(--font-body);
-  --color-forest: #173c2b;
-  --color-forest-deep: #102a1f;
-  --color-cream: #f7f4ea;
-  --color-paper: #fffdf9;
-  --color-gold: #c49a4a;
-  --color-ink: #1d2a1d;
-  --color-muted: #657168;
-  --focus-ring: #b77039;
   font-family: var(--font-body);
   line-height: 1.6;
   font-weight: 400;

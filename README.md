@@ -20,7 +20,7 @@ Authentication requests cannot be live-tested until valid project settings are c
 ## Current prototype modules
 
 - Routed application foundation: Home, Marketplace, Travel, Learning, Business tools, AI Studio, Community, Payments, Integrations, Destinations, Activity, Account, and Contact have direct browser paths. Browser back/forward, page titles, unknown-route handling, a responsive navigation menu, and Vercel SPA fallback are enabled.
-- Accessibility and presentation foundation: Times New Roman typography is configured through CSS variables, reduced-motion behavior and visible keyboard focus are respected, and English/Kiswahili navigation and key headings plus a persistent light/dark preference are available.
+- Accessibility and presentation foundation: Times New Roman typography and the forest/cream/gold design tokens are centralized in `src/styles/tokens.css`; reusable buttons, cards, badges, form fields, empty states and steppers are available in `src/components/ui`. Reduced-motion behavior and visible keyboard focus are respected, and English/Kiswahili navigation plus a persistent light/dark preference are available.
 - Marketplace: search and filter more than 40 illustrative catalogue examples by audience, category, location, TZS price range and sample availability; sort and paginate results. Search/filter state is shareable in the URL. Add examples to a browser-local cart and prepare a simulated checkout/order record. Listings are not verified supplier offers, and locally published listings/orders remain in this browser.
 - Sandbox checkout: simulate mobile-money, bank-transfer and bank-card flows for common Tanzania payment methods; records stay in this browser and no provider is contacted.
 - AI Content Studio: generate and save starter copy templates locally. This is not connected to a generative AI service.
@@ -32,7 +32,7 @@ Authentication requests cannot be live-tested until valid project settings are c
 - Site-wide guided assistant: available from the floating chat launcher and assistant section. Local intent matching can search listings, open travel and language sections, prepare forms or drafts for review, run explicitly requested local workflow previews, and open an unsubmitted sandbox checkout for a matched listing. It does not call an AI model or send messages, and cannot access live travel inventory.
 - Notifications and account overview: show activity and browser-local demo data.
 - Business support: WhatsApp, email and Instagram links use the supplied contact details.
-- A custom local SVG logo, original illustrations, and locally served photographs keep the visual demo independent of remote image hosts.
+- A custom local SVG logo, original illustrations, and locally served photographs keep the visual demo independent of remote image hosts. See `CREDITS.md` before commercial publication.
 - Local browser persistence is accessed through a shared storage repository adapter. Data remains local and is not a substitute for a secure shared backend.
 
 ## Development checks
@@ -43,7 +43,7 @@ npm test
 npm run build
 ```
 
-Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, and the simulated cart/order workflow. End-to-end Playwright tests have not yet been added.
+Vitest and Testing Library cover route configuration, storage behavior, direct routes, navigation, unknown paths, catalogue shape, marketplace filters, URL synchronization, sorting, pagination, delivery state helpers, backend readiness and the simulated cart/order workflow. The manual browser checklist is available at `/test-guide` and `TESTING.md`; end-to-end Playwright tests have not yet been added.
 
 The current route foundation displays the existing section-based modules at separate URLs. Cart and simulated-order history are local features within Marketplace and Payments, not independent server-backed routes. Product detail pages, secure order lifecycle, seller/admin dashboards, policies, and FAQ are not implemented yet. See `PROJECT_STATUS.md` and `KNOWN_ISSUES.md` for the phased implementation status.
 

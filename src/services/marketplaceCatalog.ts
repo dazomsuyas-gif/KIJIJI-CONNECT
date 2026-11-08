@@ -14,6 +14,7 @@ export type Product = {
   audience: ProductAudience[]
   stock: string
   image: string
+  images?: string[]
   isDemoUserListing?: boolean
   ownerId?: string
   stockQuantity?: number

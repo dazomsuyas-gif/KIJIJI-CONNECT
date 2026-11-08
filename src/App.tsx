@@ -12,7 +12,11 @@ import {
   demoPaymentMethods,
   type DemoPaymentMethodId,
 } from './services/demoPayments'
-import { resolveDemoAssistantIntent, type AssistantAuditEntry, type AssistantSection } from './services/demoAssistant'
+import { type AssistantAuditEntry, type AssistantSection } from './services/demoAssistant'
+import { localAssistantProvider } from './services/assistantProvider'
+import { toolRequestForIntent } from './services/assistantTools'
+import { calculateCurrentStreak, recordPracticeDay } from './services/learningProgress'
+import { updateModerationRecord, type DemoRole, type ModerationRecord, type ModerationStatus } from './services/demoModeration'
 import {
   languageCourses,
   type LearningLevelId,
@@ -41,6 +45,7 @@ import {
   type ProductAudience,
 } from './services/marketplaceCatalog'
 import type { TravelType } from './services/travelCatalog'
+import { arushaDeliveryPlaces, type DeliveryStatus } from './services/deliveryTracking'
 import {
   TravelPlanningStudio,
   type TravelAssistantCommand,
@@ -133,6 +138,12 @@ type DemoOrderRecord = {
   amount: number
   createdAt: string
   status: 'SIMULATED'
+  deliveryPlaceId: string
+  deliveryPlaceName: string
+  deliveryAddress: string
+  deliveryStatus: DeliveryStatus
+  paidAmount: number
+  balanceAmount: number
 }
 
 type AutomationRun = {
@@ -180,6 +191,9 @@ const storageKeys = {
   travelRequests: 'kijiji-connect-travel-requests',
   lessonScores: 'kijiji-connect-language-scores',
   writingDrafts: 'kijiji-connect-language-writing',
+  learningPracticeDays: 'kijiji-connect-learning-practice-days',
+  demoRole: 'kijiji-connect-demo-role',
+  moderation: 'kijiji-connect-demo-moderation',
 }
 
 const assistantGreeting: Message = {
@@ -449,6 +463,7 @@ function App() {
     'faq',
     'privacy',
     'terms',
+    'test-guide',
   ]
   const standalonePage = standalonePageIds.find((page) => page === currentPage) ?? null
   const searchText = searchParams.get('q') ?? ''
@@ -504,6 +519,16 @@ function App() {
   const [writingDrafts, setWritingDrafts] = useState<Record<string, string>>(() =>
     readStored(storageKeys.writingDrafts, {}),
   )
+  const [learningPracticeDays, setLearningPracticeDays] = useState<string[]>(() =>
+    readStored(storageKeys.learningPracticeDays, []),
+  )
+  const [demoRole, setDemoRole] = useState<DemoRole>(() => {
+    const stored = readStored<DemoRole>(storageKeys.demoRole, 'viewer')
+    return stored === 'seller' || stored === 'moderator' ? stored : 'viewer'
+  })
+  const [moderationRecords, setModerationRecords] = useState<ModerationRecord[]>(() =>
+    readStored(storageKeys.moderation, []),
+  )
   const [learningLanguage, setLearningLanguage] = useState('english')
   const [learningLevel, setLearningLevel] = useState<LearningLevelId>('A1')
   const [travelCategory, setTravelCategory] = useState<TravelType>('stays')
@@ -520,8 +545,11 @@ function App() {
   const [paymentMethod, setPaymentMethod] = useState<DemoPaymentMethodId>('mpesa')
   const [paymentPhone, setPaymentPhone] = useState('')
   const [paymentQuantity, setPaymentQuantity] = useState('1')
+  const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentError, setPaymentError] = useState('')
   const [paymentProcessing, setPaymentProcessing] = useState(false)
+  const [deliveryPlaceId, setDeliveryPlaceId] = useState('city-centre')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [draftForm, setDraftForm] = useState({ title: '', kind: 'Product description', topic: '' })
   const [postForm, setPostForm] = useState({ title: '', room: 'Business & Entrepreneurship', text: '' })
   const [productForm, setProductForm] = useState({
@@ -535,6 +563,7 @@ function App() {
     location: 'Arusha',
     seller: '',
     audience: 'B2C' as ProductAudience,
+    images: [] as string[],
   })
   const [productFormError, setProductFormError] = useState('')
   const [storageError, setStorageError] = useState('')
@@ -637,7 +666,8 @@ function App() {
     const trimmed = messageText.trim()
     if (!trimmed) return
 
-    const intent = resolveDemoAssistantIntent(trimmed)
+    const intent = localAssistantProvider.resolve(trimmed)
+    const toolRequest = toolRequestForIntent(intent)
     let reply = ''
     let actions: Message['actions']
 
@@ -810,11 +840,14 @@ function App() {
       reply = 'I can help find marketplace listings, plan a stay or trip enquiry, navigate all sections, explore CEFR-informed language lessons, prepare business content, or reach customer support. Try “find avocado products”, “find a hotel in Arusha for 2 nights for 2 guests”, “start my Swahili learning path”, or “contact support”. I use local guidance—not a connected AI model. Nothing is booked or sent automatically.'
     }
 
+    const safeReply = toolRequest?.requiresConfirmation && !reply.toLowerCase().includes('confirm')
+      ? `${reply} I will wait for your confirmation before applying anything.`
+      : reply
     const timestamp = createLocalId()
     const nextMessages = [
       ...messages,
       { id: timestamp, role: 'user' as const, text: trimmed },
-      { id: timestamp + 1, role: 'assistant' as const, text: reply, ...(actions ? { actions } : {}) },
+      { id: timestamp + 1, role: 'assistant' as const, text: safeReply, ...(actions ? { actions } : {}) },
     ].slice(-40)
     setMessages(nextMessages)
     persist(storageKeys.assistantMessages, nextMessages)
@@ -894,7 +927,8 @@ function App() {
       seller: productForm.seller.trim(),
       audience: [productForm.audience],
       stock: 'Contact to confirm',
-      image: productArtworkFor(productForm.category),
+      image: productForm.images[0] || productArtworkFor(productForm.category),
+      images: productForm.images.length > 0 ? productForm.images : undefined,
       isDemoUserListing: true,
       ownerId: localDemoSellerId,
     }
@@ -905,7 +939,41 @@ function App() {
     persist(storageKeys.products, nextProducts)
     persist(storageKeys.notifications, nextNotifications)
     setProductFormError('')
-    setProductForm({ name: '', category: categories[1], description: '', price: '', wholesalePrice: '', minimumWholesaleQty: '1', unit: 'piece', location: 'Arusha', seller: '', audience: 'B2C' })
+    setProductForm({ name: '', category: categories[1], description: '', price: '', wholesalePrice: '', minimumWholesaleQty: '1', unit: 'piece', location: 'Arusha', seller: '', audience: 'B2C', images: [] })
+  }
+
+  const handleProductImageChange = (files: FileList | null) => {
+    if (!files || files.length === 0) {
+      setProductForm((current) => ({ ...current, images: [] }))
+      return
+    }
+    if (files.length > 3) {
+      setProductFormError('Choose up to 3 images for the local gallery.')
+      return
+    }
+    const selectedFiles = Array.from(files)
+    const invalidFile = selectedFiles.find((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+    if (invalidFile) {
+      setProductFormError('Choose JPEG, PNG or WebP images.')
+      return
+    }
+    const oversizedFile = selectedFiles.find((file) => file.size > 512 * 1024)
+    if (oversizedFile) {
+      setProductFormError('Keep each local preview image at or below 512 KB.')
+      return
+    }
+
+    Promise.all(selectedFiles.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = () => reject(new Error('image-read-failed'))
+      reader.onload = () => typeof reader.result === 'string'
+        ? resolve(reader.result)
+        : reject(new Error('image-preview-failed'))
+      reader.readAsDataURL(file)
+    }))).then((images) => {
+      setProductForm((current) => ({ ...current, images }))
+      setProductFormError('')
+    }).catch(() => setProductFormError('The selected image could not be read. Choose another file.'))
   }
 
   const handleUpdateOwnedProduct = (productId: number, update: LocalProductUpdate): boolean => {
@@ -934,6 +1002,31 @@ function App() {
     } catch (error) {
       console.error('Could not remove the local demo listing.', error)
       setStorageError(error instanceof Error ? error.message : 'Could not remove this local demo listing.')
+    }
+
+  }
+
+  const handleDemoRoleChange = (role: DemoRole) => {
+    setDemoRole(role)
+    persist(storageKeys.demoRole, role)
+  }
+
+  const handleModerationChange = (productId: number, status: ModerationStatus): boolean => {
+    try {
+      const nextRecords = updateModerationRecord(
+        moderationRecords,
+        productId,
+        status,
+        demoRole,
+        createLocalTimestamp(),
+      )
+      if (!persist(storageKeys.moderation, nextRecords)) return false
+      setModerationRecords(nextRecords)
+      return true
+    } catch (error) {
+      console.error('Could not update local demo moderation status.', error)
+      setStorageError(error instanceof Error ? error.message : 'Could not update moderation status.')
+      return false
     }
   }
 
@@ -1061,12 +1154,15 @@ function App() {
       time: 'Just now',
     }
     const nextNotifications = [notice, ...notifications]
+    const nextPracticeDays = recordPracticeDay(learningPracticeDays)
     setCompletedLessons(nextLessons)
     setLessonScores(nextScores)
     setNotifications(nextNotifications)
+    setLearningPracticeDays(nextPracticeDays)
     persist(storageKeys.lessons, nextLessons)
     persist(storageKeys.lessonScores, nextScores)
     persist(storageKeys.notifications, nextNotifications)
+    persist(storageKeys.learningPracticeDays, nextPracticeDays)
   }
 
   const handleSaveLearningWriting = (lessonId: string, text: string) => {
@@ -1098,7 +1194,11 @@ function App() {
     setPaymentMethod('mpesa')
     setPaymentPhone('')
     setPaymentQuantity('1')
+    setPaymentAmount('')
     setPaymentError('')
+    setPaymentAmount(String(product.price))
+    setDeliveryPlaceId('city-centre')
+    setDeliveryAddress('')
   }
 
   const handleOpenCartCheckout = () => {
@@ -1107,7 +1207,10 @@ function App() {
     setCheckoutCart(true)
     setPaymentMethod('mpesa')
     setPaymentPhone('')
+    setPaymentAmount(String(cartSubtotal))
     setPaymentError('')
+    setDeliveryPlaceId('city-centre')
+    setDeliveryAddress('')
   }
 
   const handleCloseCheckout = () => {
@@ -1159,6 +1262,11 @@ function App() {
       setPaymentError('Enter a whole-number quantity of at least 1.')
       return
     }
+    const paidAmount = Number(paymentAmount || checkoutTotal)
+    if (!Number.isInteger(paidAmount) || paidAmount <= 0 || paidAmount > checkoutTotal) {
+      setPaymentError(`Enter a payment amount from TZS 1 to ${formatTzs(checkoutTotal)}.`)
+      return
+    }
     if (selectedPaymentMethod?.kind === 'mobile' && !/^(?:\+?255|0)\d{9}$/.test(paymentPhone.replace(/[\s-]/g, ''))) {
       setPaymentError('Enter a Tanzania mobile number, for example 07XXXXXXXX or +2557XXXXXXXX.')
       return
@@ -1188,14 +1296,14 @@ function App() {
       const result = await createDemoPayment({
         method: paymentMethod,
         phone: paymentPhone.trim(),
-        amount: checkoutTotal,
+        amount: paidAmount,
         productName: orderName,
       })
       const record: PaymentRecord = {
         id: result.reference,
         reference: result.reference,
         productName: orderName,
-        amount: checkoutTotal,
+        amount: paidAmount,
         method: paymentMethod,
         createdAt: result.createdAt,
         status: result.status,
@@ -1207,6 +1315,12 @@ function App() {
         amount: checkoutTotal,
         createdAt: result.createdAt,
         status: result.status,
+        deliveryPlaceId,
+        deliveryPlaceName: arushaDeliveryPlaces.find((place) => place.id === deliveryPlaceId)?.name ?? 'Arusha City Centre',
+        deliveryAddress: deliveryAddress.trim(),
+        deliveryStatus: 'pending-sender',
+        paidAmount,
+        balanceAmount: checkoutTotal - paidAmount,
       }
       const nextPayments = [record, ...paymentRecords]
       const nextOrders = [orderRecord, ...orderRecords]
@@ -1216,6 +1330,7 @@ function App() {
         text: `${orderName}: ${result.message} No fulfilment or real payment is involved.`,
         time: 'Just now',
       }
+
       const nextNotifications = [notice, ...notifications]
       setPaymentRecords(nextPayments)
       setOrderRecords(nextOrders)
@@ -1234,6 +1349,12 @@ function App() {
     } finally {
       setPaymentProcessing(false)
     }
+  }
+
+  const handleUpdateOrderDelivery = (orderId: string, deliveryStatus: DeliveryStatus) => {
+    const nextOrders = orderRecords.map((order) => order.id === orderId ? { ...order, deliveryStatus } : order)
+    setOrderRecords(nextOrders)
+    persist(storageKeys.orders, nextOrders)
   }
 
   const handleRunAutomation = (workflow: (typeof automationWorkflows)[number]) => {
@@ -1348,6 +1469,11 @@ function App() {
               onUpdateProduct={handleUpdateOwnedProduct}
               onDeleteProduct={handleRemoveProduct}
               assistantAuditLog={assistantAuditLog}
+              demoRole={demoRole}
+              moderationRecords={moderationRecords}
+              onDemoRoleChange={handleDemoRoleChange}
+              onModerationChange={handleModerationChange}
+              onUpdateOrderDelivery={handleUpdateOrderDelivery}
             />
           </Suspense>
         )}
@@ -1472,6 +1598,7 @@ function App() {
             onPlacementSuggestion={setLearningLevel}
             writingDrafts={writingDrafts}
             onSaveWriting={handleSaveLearningWriting}
+            practiceStreak={calculateCurrentStreak(learningPracticeDays)}
           />
         </section>
 
@@ -1752,6 +1879,8 @@ function App() {
               <label>Product name<input id="product-name" required value={productForm.name} onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))} /></label>
               <label>Category<select value={productForm.category} onChange={(event) => setProductForm((current) => ({ ...current, category: event.target.value }))}>{categories.filter((category) => category !== 'All categories').map((category) => <option key={category}>{category}</option>)}</select></label>
               <label>Description<textarea required rows={3} value={productForm.description} onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))} /></label>
+              <label>Listing images (up to 3 JPEG, PNG or WebP files; 512 KB each)<input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => handleProductImageChange(event.target.files)} /></label>
+              {productForm.images.length > 0 && <div className="listing-image-previews">{productForm.images.map((image, index) => <img className="listing-image-preview" key={image} src={image} alt={`Preview of your listing image ${index + 1}`} />)}</div>}
               <label>Retail price (TZS)<input required type="number" min="1" step="1" value={productForm.price} onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))} /></label>
               <label>Wholesale price (TZS)<input required type="number" min="1" step="1" value={productForm.wholesalePrice} onChange={(event) => setProductForm((current) => ({ ...current, wholesalePrice: event.target.value }))} /></label>
               <label>Minimum wholesale quantity<input required type="number" min="1" step="1" value={productForm.minimumWholesaleQty} onChange={(event) => setProductForm((current) => ({ ...current, minimumWholesaleQty: event.target.value }))} /></label>
@@ -2045,6 +2174,10 @@ function App() {
                   <p className="checkout-price-note">{parsedQuantity >= checkoutProduct.minimumWholesaleQty ? `Illustrative wholesale price applies from ${checkoutProduct.minimumWholesaleQty} ${checkoutProduct.unit}.` : `Illustrative retail price: ${formatTzs(checkoutProduct.price)} per ${checkoutProduct.unit}.`}</p>
                 </>
               )}
+              <label>Amount to pay now
+                <input type="number" min="1" step="1" required value={paymentAmount || checkoutTotal} onChange={(event) => setPaymentAmount(event.target.value)} />
+              </label>
+              <p className="checkout-price-note">Remaining balance: {formatTzs(Math.max(0, checkoutTotal - Number(paymentAmount || checkoutTotal)))}.</p>
               <fieldset className="payment-method-picker">
                 <legend>Choose a demo payment method</legend>
                 {demoPaymentMethods.map((method) => (
@@ -2056,6 +2189,18 @@ function App() {
               </fieldset>
               {selectedPaymentMethod?.kind === 'mobile' && <label>Mobile money number<input type="tel" required inputMode="tel" autoComplete="tel" value={paymentPhone} onChange={(event) => setPaymentPhone(event.target.value)} placeholder="+255 7XX XXX XXX" /></label>}
               {selectedPaymentMethod?.kind !== 'mobile' && <p className="checkout-price-note">No bank or card details are requested or processed in this demo.</p>}
+              <fieldset className="delivery-fieldset">
+                <legend>Delivery place in Arusha</legend>
+                <label>Area and GPS destination
+                  <select value={deliveryPlaceId} onChange={(event) => setDeliveryPlaceId(event.target.value)}>
+                    {arushaDeliveryPlaces.map((place) => <option key={place.id} value={place.id}>{place.name} · {place.area}</option>)}
+                  </select>
+                </label>
+                <label>Street, landmark or building
+                  <input value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Example: near the market gate" />
+                </label>
+                <p className="checkout-price-note">The selected Arusha place is a local delivery destination. Live driver GPS requires a configured logistics provider.</p>
+              </fieldset>
               <p className="payment-warning">Simulation only: pressing the button below will not contact a payment provider or charge money.</p>
               {paymentError && <p className={paymentError.startsWith('Demo only:') ? 'payment-result' : 'storage-error'} role="status">{paymentError}</p>}
               <button type="submit" className="primary-button checkout-submit" disabled={paymentProcessing}>{paymentProcessing ? 'Simulating checkout…' : 'Simulate payment'}</button>
@@ -2083,6 +2228,7 @@ function App() {
           <Link to="/faq">FAQ</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <Link to="/test-guide">Testing guide</Link>
         </nav>
         <div>
           <p>Arusha, Tanzania</p>

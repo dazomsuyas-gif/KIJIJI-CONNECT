@@ -1,8 +1,8 @@
-# NEXT PHASE: Complete remaining seller/admin marketplace workflows (Phase 2)
+# NEXT PHASE: Complete provider-backed marketplace and release testing
 
 # Kijiji Connect project status
 
-Last reviewed: 2026-10-28
+Last reviewed: 2026-11-08
 
 ## Current architecture
 
@@ -10,7 +10,7 @@ Last reviewed: 2026-10-28
 - Node.js v24.20.0 and npm 11.19.0 are available in the current Windows environment.
 - Package commands: `npm run dev`, `npm run build`, `npm run lint`, `npm test`, and `npm run preview`.
 - Styling uses CSS variables with Times New Roman typography; English/Kiswahili navigation and selected headings, persistent light/dark preference, accessible mobile navigation, reduced-motion support, and Vercel deep-link fallback are implemented.
-- Direct paths are available for the main modules plus product/supplier details, cart, orders, seller/admin demo boundaries, assistant, articles, about, FAQ and legal templates.
+- Direct paths are available for the main modules plus product/supplier details, cart, orders, seller/admin demo boundaries, assistant, testing guide, articles, about, FAQ and legal templates.
 - Browser storage access for local application data now uses `src/services/storageRepository.ts`.
 - UI modules include marketplace, demo checkout, locally stored content/community, language practice, illustrative travel enquiries, and a local intent-matching assistant.
 - The Supabase JavaScript client and lazy browser-client scaffold are present. The Supabase package is code-split and dynamically loaded. The account screen includes email sign-up, sign-in, password recovery and update, and sign-out, wired to Supabase Auth when configuration is available.
@@ -20,7 +20,8 @@ Last reviewed: 2026-10-28
 
 - Latest production build and TypeScript check: passed with `npm run build`; standalone pages remain in a separate lazy chunk.
 - Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 56 tests passed across 7 files using Vitest and Testing Library.
+- Latest automated test run: 75 tests passed across 12 files using Vitest and Testing Library.
+- Redesign foundation: centralized tokens, reusable UI primitives, local photo credits, a `/test-guide` route, `TESTING.md`, Open Graph image metadata and JSON-LD were added without changing existing workflows.
 - Latest `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
 - Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
 - Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
@@ -35,6 +36,15 @@ Last reviewed: 2026-10-28
 - Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the local cart recalculates wholesale pricing at MOQ, persists across refresh, and creates only a `SIMULATED` order record after the clearly labelled sandbox step. The cart clears after the simulation. Hotel intent still transfers to travel. At 390px marketplace/cart views have no horizontal overflow. No browser console errors, page errors, or failed requests were observed during successful checks.
 - Current route-foundation browser checks: product details and supplier profiles show explicitly unverified sample data; quote handoff is a user-directed WhatsApp link, not an automated send. A real click added a product to the browser-local cart, and the header cart link displayed the item and indicative subtotal. The footer Orders link reached the honest empty demo-order view. Mobile navigation opened at 320px; unknown paths render the 404 page. Document scroll width matched the 320px viewport.
 - Seller workflow browser checks: created a local listing, edited its price and stock, then deleted it; temporary test data was removed.
+- Seller listing form now accepts up to three JPEG/PNG/WebP images at 512 KB each, previews the selected gallery, and saves it only in browser storage. Product detail pages expose saved media as a thumbnail gallery. Automated coverage verifies preview and local persistence.
+- The demo moderation page supports browser-local pending/approved/rejected listing decisions, a role switcher, and moderator-only controls in the preview. It does not publish listings or provide authorization.
+- Phase 3 now has an `AssistantProvider` abstraction with the local rule provider selected explicitly. Common English/Kiswahili navigation and support phrases are covered by automated tests; no live AI provider is configured.
+- Phase 3 safe-tool contracts now cover product search, order drafts, seller proposals, quote/travel/lesson actions, support tickets and review-only WhatsApp/email handoffs. Confirmation and external-side-effect metadata are explicit; no message is sent automatically.
+- The visual system now uses a professional blue/white light theme with a dark charcoal alternative, improved spacing, cards, controls and responsive layout. The Learning Academy includes a reviewable flashcard surface alongside its lesson, writing and assessment workflows.
+- Learning practice passes now persist a browser-local calendar day and display the current consecutive practice streak; the streak is not synced across devices or accounts.
+- Marketplace checkout now captures an Arusha delivery place and landmark, calculates simulated paid and outstanding balances from a partial-payment field, and exposes sender acceptance, dispatch and delivery states with a local Arusha coordinate view. Live logistics GPS and shared settlement remain unconfigured.
+- Release scaffolding now includes a web manifest, offline shell service worker, robots file, sitemap, and an explicit typed backend capability boundary. These do not imply that shared persistence or provider integrations are live.
+- Phase 2 closeout checks completed on localhost: direct moderation route rendered, browser-local moderator role persisted after reload, and the 390px moderation view had no horizontal overflow. Localhost returned HTTP 200 after the checks.
 - Assistant browser checks: price/stock changes remained pending until confirmed, showed exact before/after values, appeared in the local audit log, and were reverted with Undo. A quantity request created only a confirmed local cart draft; Undo cleared it. Temporary test state was removed.
 - Local server check: `http://localhost:5173/` returned HTTP 200 and remained owned by the existing Vite process (PID 21676) after verification.
 - `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
@@ -64,7 +74,7 @@ Do not apply migrations, create or alter policies, reset a project, or inspect c
 
 ## Immediate next action
 
-Continue with remaining Phase 2 seller/admin workflows, then proceed to the incomplete phases. Supabase remains optional; before proposing migrations, identify the intended remote project and review its existing schema and RLS policies using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data; never put a service-role key in the browser.
+Continue with remaining provider-backed logistics and marketplace work only after reviewed backend configuration is supplied. The local delivery workflow is complete for preview purposes. Supabase remains optional; before proposing migrations, identify the intended remote project and review its existing schema and RLS policies using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data; never put a service-role key in the browser.
 
 ## Files changed by the latest implementation cycle
 

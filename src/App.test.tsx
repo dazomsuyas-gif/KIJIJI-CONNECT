@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import App from './App'
 import { productsSeed } from './services/marketplaceCatalog'
 import { localDemoSellerId } from './services/localMarketplaceRepository'
+import { createLevelAssessment, languageCourses } from './services/languageLearning'
 
 function LocationProbe() {
   const location = useLocation()
@@ -53,6 +54,26 @@ describe('routed application shell', () => {
     expect(supplierPage.getByText(/not independently verified/)).toBeVisible()
   })
 
+  it('lets product detail pages switch between saved gallery images', async () => {
+    localStorage.setItem('kijiji-connect-products', JSON.stringify([{
+      ...productsSeed[0],
+      id: 9010,
+      isDemoUserListing: true,
+      ownerId: localDemoSellerId,
+      images: ['data:image/png;base64,first', 'data:image/png;base64,second'],
+    }]))
+    render(
+      <MemoryRouter initialEntries={['/products/9010']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const gallery = await screen.findByRole('group', { name: 'Product image gallery' })
+    expect(gallery).toBeVisible()
+    fireEvent.click(within(gallery).getByRole('button', { name: 'View image 2 of 2' }))
+    expect(screen.getByAltText('Fresh Avocado Grade A image 2 of 2')).toHaveAttribute('src', 'data:image/png;base64,second')
+  })
+
   it('renders a local cart route and the demo seller/admin boundaries', async () => {
     const { unmount } = render(
       <MemoryRouter initialEntries={['/cart']}>
@@ -72,6 +93,68 @@ describe('routed application shell', () => {
     )
     expect(await screen.findByRole('heading', { name: 'Local demo moderation' }, { timeout: 5000 })).toBeVisible()
     expect(screen.getByText(/not a protected administrator or seller dashboard/)).toBeVisible()
+  })
+
+  it('renders the local tester guide directly', async () => {
+    render(
+      <MemoryRouter initialEntries={['/test-guide']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Testing guide' })).toBeVisible()
+    expect(screen.getByText(/partial payment/)).toBeVisible()
+  })
+
+  it('supports the browser-local moderator review flow without granting real permissions', async () => {
+    localStorage.setItem('kijiji-connect-products', JSON.stringify([{
+      ...productsSeed[0],
+      id: 9011,
+      isDemoUserListing: true,
+      ownerId: localDemoSellerId,
+    }]))
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/1 pending/)).toBeVisible()
+    const roleSelect = screen.getByLabelText('Browser-local demo role')
+    fireEvent.change(roleSelect, { target: { value: 'moderator' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+
+    expect(await screen.findByText(/status: approved/)).toBeVisible()
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-moderation') ?? '[]')).toEqual(
+      [expect.objectContaining({ productId: 9011, status: 'approved', updatedBy: 'moderator' })],
+    )
+  })
+
+  it('provides a reviewable learning flashcard on the academy route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/learning']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Recall this phrase' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal answer' }))
+    expect(screen.getByRole('button', { name: 'Hide answer' })).toBeVisible()
+  })
+
+  it('records a learning practice day after passing an assessment', async () => {
+    render(
+      <MemoryRouter initialEntries={['/learning']}>
+        <App />
+      </MemoryRouter>,
+    )
+    const assessment = createLevelAssessment(languageCourses[0].levels[0])
+    assessment.forEach((question) => fireEvent.click(screen.getByLabelText(question.options[question.answerIndex])))
+    fireEvent.click(screen.getByRole('button', { name: 'Check my answers' }))
+    expect(await screen.findByText(/Passed:/)).toBeVisible()
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-learning-practice-days') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)]),
+    )
   })
 
   it('lets the local demo seller update only their browser-local listing', async () => {
@@ -266,6 +349,33 @@ describe('routed application shell', () => {
     expect(screen.getByText(/Showing 37–42 of 42 sample listings/)).toBeVisible()
   })
 
+  it('previews and saves a bounded local listing image', async () => {
+    render(
+      <MemoryRouter initialEntries={['/marketplace']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText('Product name'), { target: { value: 'Local image test product' } })
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'A test listing with a local image.' } })
+    fireEvent.change(screen.getByLabelText('Retail price (TZS)'), { target: { value: '1000' } })
+    fireEvent.change(screen.getByLabelText('Wholesale price (TZS)'), { target: { value: '900' } })
+    fireEvent.change(screen.getByLabelText('Business/seller name'), { target: { value: 'Test seller' } })
+    const image = new File(['local-image-content'], 'preview.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/Listing image/), { target: { files: [image] } })
+
+    const preview = await screen.findByAltText('Preview of your listing image 1')
+    await waitFor(() => expect(preview).toHaveAttribute('src', expect.stringMatching(/^data:image\/png;base64,/)))
+    fireEvent.submit(screen.getByLabelText('Product name').closest('form') as HTMLFormElement)
+
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-products') ?? '[]')).toEqual(
+      expect.arrayContaining([expect.objectContaining({
+        name: 'Local image test product',
+        image: expect.stringMatching(/^data:image\/png;base64,/),
+      })]),
+    )
+  })
+
   it('applies combined audience, category, location, price and sample-stock filters', async () => {
     render(
       <MemoryRouter initialEntries={[
@@ -341,6 +451,9 @@ describe('routed application shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review sandbox checkout' }))
     const checkout = screen.getByRole('dialog')
     expect(within(checkout).getAllByText(/96,000/)).toHaveLength(2)
+    fireEvent.change(within(checkout).getByLabelText('Amount to pay now'), { target: { value: '60000' } })
+    fireEvent.change(within(checkout).getByLabelText('Area and GPS destination'), { target: { value: 'njiro' } })
+    fireEvent.change(within(checkout).getByLabelText('Street, landmark or building'), { target: { value: 'Near Njiro Complex' } })
     fireEvent.change(within(checkout).getByLabelText('Mobile money number'), { target: { value: '+255768868546' } })
     fireEvent.click(within(checkout).getByRole('button', { name: 'Simulate payment' }))
 
@@ -348,11 +461,14 @@ describe('routed application shell', () => {
     expect(screen.getByText(/0 items · saved only in this browser/)).toBeVisible()
     expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-cart') ?? '[]')).toEqual([])
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close checkout' }))
-    const navigation = within(document.getElementById('primary-navigation')!)
-    fireEvent.click(navigation.getByRole('link', { name: 'Payments' }))
-    expect(await screen.findByText('Fresh Avocado Grade A × 30')).toBeVisible()
-    expect(screen.getAllByText('SIMULATED').length).toBeGreaterThan(0)
-    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-orders') ?? '[]')).toHaveLength(1)
+    expect(JSON.parse(localStorage.getItem('kijiji-connect-demo-orders') ?? '[]')).toEqual([
+      expect.objectContaining({
+        deliveryPlaceId: 'njiro',
+        deliveryAddress: 'Near Njiro Complex',
+        deliveryStatus: 'pending-sender',
+        paidAmount: 60000,
+        balanceAmount: 36000,
+      }),
+    ])
   })
 })

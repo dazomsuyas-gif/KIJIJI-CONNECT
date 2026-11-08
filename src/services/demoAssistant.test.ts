@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { resolveDemoAssistantIntent } from './demoAssistant'
 
 describe('local assistant marketplace routing', () => {
+  it('supports common Kiswahili navigation and support requests', () => {
+    expect(resolveDemoAssistantIntent('Nisaidie kwenda kwenye soko')).toEqual({
+      type: 'navigate',
+      section: 'marketplace',
+    })
+    expect(resolveDemoAssistantIntent('Nataka kujifunza Kiswahili')).toEqual({
+      type: 'navigate',
+      section: 'learn-languages',
+    })
+    expect(resolveDemoAssistantIntent('Wasiliana na msaada')).toEqual({ type: 'contact' })
+  })
+
   it('searches product requests instead of treating every “find” request as travel', () => {
     expect(resolveDemoAssistantIntent('Find avocado products')).toEqual({
       type: 'search',

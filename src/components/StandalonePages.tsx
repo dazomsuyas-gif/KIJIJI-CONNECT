@@ -4,6 +4,9 @@ import type { Product } from '../services/marketplaceCatalog'
 import type { AssistantAuditEntry } from '../services/demoAssistant'
 import { businessContact } from '../config/contact'
 import { localDemoSellerId, type LocalProductUpdate } from '../services/localMarketplaceRepository'
+import { moderationStatusFor, type DemoRole, type ModerationRecord, type ModerationStatus } from '../services/demoModeration'
+import { arushaDeliveryPlaces, deliveryStatusIndex, deliveryStatusLabel, type DeliveryStatus } from '../services/deliveryTracking'
+import { Stepper } from './ui'
 
 export type StandalonePageId =
   | 'product-detail'
@@ -18,6 +21,7 @@ export type StandalonePageId =
   | 'faq'
   | 'privacy'
   | 'terms'
+  | 'test-guide'
 
 export type StandaloneCartLine = {
   product: Product
@@ -33,6 +37,12 @@ export type StandaloneOrder = {
   amount: number
   createdAt: string
   status: 'SIMULATED'
+  deliveryPlaceId?: string
+  deliveryPlaceName?: string
+  deliveryAddress?: string
+  deliveryStatus?: DeliveryStatus
+  paidAmount?: number
+  balanceAmount?: number
 }
 
 type StandalonePagesProps = {
@@ -50,6 +60,11 @@ type StandalonePagesProps = {
   onUpdateProduct: (productId: number, update: LocalProductUpdate) => boolean
   onDeleteProduct: (productId: number) => void
   assistantAuditLog: AssistantAuditEntry[]
+  demoRole: DemoRole
+  moderationRecords: ModerationRecord[]
+  onDemoRoleChange: (role: DemoRole) => void
+  onModerationChange: (productId: number, status: ModerationStatus) => boolean
+  onUpdateOrderDelivery: (orderId: string, status: DeliveryStatus) => void
 }
 
 const price = (amount: number) => new Intl.NumberFormat('en-TZ', {
@@ -82,16 +97,24 @@ function ProductDetail({ product, products, onAddToCart }: {
   products: Product[]
   onAddToCart: (product: Product) => void
 }) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   if (!product) {
     return <PageSection title="Product not found"><p>This sample listing is not available in the current local catalogue.</p><Link to="/marketplace">Back to marketplace</Link></PageSection>
   }
   const related = products.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 3)
+  const gallery = product.images?.length ? product.images : [product.image]
+  const visibleImageIndex = Math.min(selectedImageIndex, gallery.length - 1)
   const supplierPath = `/suppliers/${slugFor(product.seller)}`
   return (
     <>
       <PageSection title={product.name} eyebrow="Sample listing · indicative price">
         <div className="standalone-product-detail">
-          <img className="standalone-detail-image" src={product.image} alt={product.name} />
+          <div className="product-gallery">
+            <img className="standalone-detail-image" src={gallery[visibleImageIndex]} alt={`${product.name} image ${visibleImageIndex + 1} of ${gallery.length}`} />
+            {gallery.length > 1 && <div className="product-gallery-thumbnails" role="group" aria-label="Product image gallery">
+              {gallery.map((image, index) => <button key={`${image}-${index}`} type="button" className={index === visibleImageIndex ? 'product-gallery-thumbnail is-selected' : 'product-gallery-thumbnail'} aria-label={`View image ${index + 1} of ${gallery.length}`} aria-pressed={index === visibleImageIndex} onClick={() => setSelectedImageIndex(index)}><img src={image} alt="" /></button>)}
+            </div>}
+          </div>
           <div className="standalone-detail-copy">
             <p>{product.description}</p>
             <p className="phase-note">Illustrative offer only. Price and availability are not verified; confirm specifications and current terms directly with the seller.</p>
@@ -195,7 +218,7 @@ function SellerDashboard({ products, orders, onUpdateProduct, onDeleteProduct }:
 }
 
 export function StandalonePages(props: StandalonePagesProps) {
-  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout, onUpdateProduct, onDeleteProduct, assistantAuditLog } = props
+  const { page, product, products, supplierName, cartLines, orders, cartSubtotal, onAddToCart, onUpdateCartQuantity, onRemoveFromCart, onCheckout, onUpdateProduct, onDeleteProduct, assistantAuditLog, demoRole, moderationRecords, onDemoRoleChange, onModerationChange, onUpdateOrderDelivery } = props
 
   if (page === 'product-detail') return <ProductDetail product={product} products={products} onAddToCart={onAddToCart} />
 
@@ -208,6 +231,22 @@ export function StandalonePages(props: StandalonePagesProps) {
         <p>{listings[0]?.location ?? 'Tanzania'} · {listings.length} sample listings</p>
         <div className="market-grid">{listings.map((item) => <ProductCard key={item.id} product={item} />)}</div>
         {listings.length === 0 && <p className="empty-state">No matching sample listings are available.</p>}
+      </PageSection>
+    )
+  }
+
+  if (page === 'test-guide') {
+    return (
+      <PageSection title="Testing guide" eyebrow="Local user-testing checklist">
+        <p className="phase-note">This guide separates working browser-local flows from provider features that require configuration. Use a fresh browser profile when you want to test without existing local records.</p>
+        <div className="phase-list">
+          <details open><summary>Marketplace and delivery</summary><p>Search and filter products, add an item to cart, open checkout, select an Arusha destination, enter a partial payment, and review the balance in Orders.</p></details>
+          <details><summary>Sender workflow</summary><p>Open Orders, switch the browser-local role to Seller on the seller workspace, accept an order, mark it sent, and review the destination tracking preview.</p></details>
+          <details><summary>Travel</summary><p>Switch Hotels, Flights and Tours, enter dates and travellers, choose an illustrative offer, and review the WhatsApp/email handoff before opening it.</p></details>
+          <details><summary>Language Academy</summary><p>Choose a language and level, reveal a flashcard, complete the assessment, and confirm the local streak updates after a passing result.</p></details>
+          <details><summary>Assistant and accessibility</summary><p>Use a quick prompt, confirm a local change, try Undo, then navigate with Tab and verify focus remains visible. Live AI, messages and payments are not connected.</p></details>
+          <details><summary>What is simulated</summary><p>Catalogue data, cart, payment records, balances, delivery status, destination coordinates, learning progress, roles and assistant history are stored in this browser only.</p></details>
+        </div>
       </PageSection>
     )
   }
@@ -236,13 +275,32 @@ export function StandalonePages(props: StandalonePagesProps) {
   if (page === 'orders') {
     return (
       <PageSection title="Demo order history" eyebrow="Local records · not real orders">
-        <p>These are simulated checkout records only. There is no supplier acceptance, processing, dispatch or delivery in this prototype.</p>
+        <p>These are simulated checkout records. This browser preview now records a delivery place, balance, sender acceptance and dispatch state; it does not contact a supplier, payment provider or live GPS service.</p>
         {orders.length === 0 ? <p className="empty-state">No local demo orders yet. <Link to="/marketplace">Browse sample products</Link></p> : orders.map((order) => (
           <article className="phase-card standalone-order" key={order.id}>
             <div className="section-heading"><div><h2>Order {order.reference}</h2><p>{order.createdAt}</p></div><span className="payment-demo-tag">SIMULATED</span></div>
-            <ol className="order-timeline"><li aria-current="step">Checkout simulated — no payment or fulfilment</li><li>Pending — not sent to seller</li><li>Accepted / processing / dispatched / delivered — not available in demo</li></ol>
+            {(() => {
+              const deliveryStatus = order.deliveryStatus ?? 'pending-sender'
+              const statusIndex = deliveryStatusIndex(deliveryStatus)
+              const place = order.deliveryPlaceName ?? 'Arusha City Centre'
+              const selectedPlace = arushaDeliveryPlaces.find((deliveryPlace) => deliveryPlace.name === place) ?? arushaDeliveryPlaces[0]
+              return (
+                <>
+                  <Stepper steps={(['pending-sender', 'accepted', 'sent', 'delivered'] as DeliveryStatus[]).map(deliveryStatusLabel)} current={statusIndex} />
+                  <div className="delivery-summary">
+                    <strong>Order balance</strong>
+                    <span>Total: {price(order.amount)} · Paid (simulated): {price(order.paidAmount ?? order.amount)} · Balance: {price(order.balanceAmount ?? 0)}</span>
+                    <span>Delivery: {place}{order.deliveryAddress ? ` · ${order.deliveryAddress}` : ''}</span>
+                    <span>GPS: {deliveryStatus === 'sent' || deliveryStatus === 'delivered' ? 'Local tracking point active for Arusha' : 'Activates after sender dispatch'}</span>
+                    <a href={`https://www.openstreetmap.org/?mlat=${selectedPlace.latitude}&mlon=${selectedPlace.longitude}#map=15/${selectedPlace.latitude}/${selectedPlace.longitude}`} target="_blank" rel="noreferrer">Review destination on OpenStreetMap</a>
+                  </div>
+                  {demoRole !== 'viewer' && deliveryStatus !== 'delivered' && <button type="button" className="secondary-button" onClick={() => onUpdateOrderDelivery(order.id, deliveryStatus === 'pending-sender' ? 'accepted' : 'sent')}>{deliveryStatus === 'pending-sender' ? 'Accept order as sender' : 'Mark sent by sender'}</button>}
+                  {deliveryStatus === 'sent' && <button type="button" className="primary-button" onClick={() => onUpdateOrderDelivery(order.id, 'delivered')}>Confirm delivery received</button>}
+                  {deliveryStatus === 'sent' && <div className="gps-tracking-card"><strong>Arusha delivery tracking</strong><span>Tracking is local preview data, not a live device GPS feed.</span><div className="gps-grid">{arushaDeliveryPlaces.map((deliveryPlace) => <span className={deliveryPlace.name === place ? 'gps-point selected' : 'gps-point'} key={deliveryPlace.id} title={`${deliveryPlace.latitude}, ${deliveryPlace.longitude}`}>{deliveryPlace.name}</span>)}</div></div>}
+                </>
+              )
+            })()}
             {order.lines.map((line) => <p key={line.productName}>{line.productName} × {line.quantity} {line.unit} · {price(line.lineTotal)} indicative</p>)}
-            <strong>Simulated total: {price(order.amount)}</strong>
             <button type="button" className="secondary-button" onClick={() => window.print()}>Print demo receipt</button>
           </article>
         ))}
@@ -255,11 +313,21 @@ export function StandalonePages(props: StandalonePagesProps) {
   }
 
   if (page === 'admin') {
+    const demoListings = products.filter((item) => item.isDemoUserListing)
+    const pendingCount = demoListings.filter((item) => moderationStatusFor(moderationRecords, item.id) === 'pending').length
     return (
       <PageSection title="Local demo moderation" eyebrow="Sandbox only · no authentication or real permissions">
         <p className="phase-note">This page is a local preview, not a protected administrator or seller dashboard. Browser data and role labels can be edited by users; do not use it to manage real sellers, customers, listings or orders.</p>
+        <article className="phase-card">
+          <h2>Demo role switcher</h2>
+          <p>Use this control to exercise the interface only. It is not authentication, authorization or a security boundary.</p>
+          <label>Browser-local demo role<select aria-label="Browser-local demo role" value={demoRole} onChange={(event) => onDemoRoleChange(event.target.value as DemoRole)}><option value="viewer">Viewer</option><option value="seller">Seller</option><option value="moderator">Moderator</option></select></label>
+        </article>
         <div className="phase-list">
-          <article className="phase-card"><h2>Sample listings to review</h2><p>Moderation actions are not enabled because this demo has no trusted user identity or server-side authorization.</p><Link className="primary-button" to="/marketplace">Browse sample catalogue</Link></article>
+          <article className="phase-card"><h2>Sample listings to review</h2><p>{pendingCount} pending · {demoListings.length} browser-local listing(s). Changes are illustrative and do not publish a listing.</p>{demoListings.length === 0 ? <p className="empty-state">No local seller listings are available.</p> : <div className="moderation-list">{demoListings.map((item) => {
+            const status = moderationStatusFor(moderationRecords, item.id)
+            return <div className="moderation-item" key={item.id}><div><strong>{item.name}</strong><small>{item.seller} · status: {status}</small></div><div className="moderation-actions"><button type="button" className="secondary-button" disabled={demoRole !== 'moderator'} onClick={() => onModerationChange(item.id, 'approved')}>Approve</button><button type="button" className="remove-listing" disabled={demoRole !== 'moderator'} onClick={() => onModerationChange(item.id, 'rejected')}>Reject</button></div></div>
+          })}</div>}<Link className="primary-button" to="/marketplace">Browse sample catalogue</Link></article>
           <article className="phase-card"><h2>Order records</h2><p>{orders.length} local simulated records. No customer purchase or fulfilment is represented.</p><Link to="/orders">View demo order history</Link></article>
           <article className="phase-card"><h2>Local assistant audit log</h2><p>Confirmed assistant listing changes in this browser only; this is not a security audit trail.</p>{assistantAuditLog.length === 0 ? <p className="empty-state">No confirmed assistant changes yet.</p> : <ol>{assistantAuditLog.map((entry) => <li key={entry.id}>{entry.createdAt} · {entry.productName}: {entry.action}</li>)}</ol>}</article>
         </div>

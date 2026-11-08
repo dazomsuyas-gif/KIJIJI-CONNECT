@@ -4,6 +4,14 @@ Status key: `[x]` verified complete; `[ ]` not complete; `[blocked]` requires an
 
 This roadmap compares the requested target with the existing implementation. Preserve working modules, complete safe local work in order, and verify each phase before pushing it. Do not apply migrations to a remote database, handle real payments, send messages, or claim live inventory/AI without owner-approved configuration and end-to-end provider tests.
 
+## Redesign
+
+- [x] Consolidate colour, spacing, typography, radius, shadow, motion and z-index tokens in `src/styles/tokens.css`.
+- [x] Add reusable accessible UI primitives for buttons, cards, fields, badges, empty states and stepper timelines.
+- [x] Refresh the shared shell foundations with consistent page rhythm, responsive navigation and honest preview-status copy.
+- [x] Improve orders/delivery and shared surfaces with consistent stepper/cards, responsive controls, accessible states and locally served imagery.
+- [x] Add a tester guide route/document, structured SEO metadata and release-quality browser checks without claiming unavailable provider integrations.
+
 ## Phase 1 — Routes, reliability and shared UI foundation
 
 - [x] Preserve the existing React 19, TypeScript, Vite, React Router application and current local server.
@@ -19,29 +27,32 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 - [x] Expand to 41 illustrative products; add URL-synced search, audience/category/location/price/availability filters, sorting and pagination.
 - [x] Add a browser-local cart and explicitly simulated checkout/order log.
+- [x] Capture an Arusha delivery place/landmark, simulated paid balance, sender acceptance, dispatch and delivery states with coordinate review.
 - [x] Add a typed local listing repository boundary with explicit local-owner checks and browser persistence.
 - [x] Add basic product detail/specifications/related listings, sample supplier profiles and user-directed quote handoff.
-- [ ] Add product image gallery and order timeline/print receipt; any status updates remain demo-only.
+- [x] Add product image gallery and order timeline/print receipt; any status updates remain demo-only.
 - [x] Add local seller listing create/edit/delete, input validation, price/stock updates and low-stock alerts; label local owner checks as non-security.
-- [ ] Add listing image preview and seller sales/order summaries; do not imply verified sales or fulfillment.
-- [ ] Add demo moderation/user-role/audit views. Browser-local role flags are never authorization.
-- [ ] Test persistence, role boundary, validation, empty/error states and mobile usability.
+- [x] Add bounded browser-local listing image upload and preview; seller sales/order summaries remain unimplemented.
+- [x] Add demo moderation/user-role/audit views. Browser-local role flags are never authorization.
+- [x] Test persistence, role boundary, validation, empty/error states and mobile usability.
 
 ## Phase 3 — Assistant tools with safe confirmation
 
 - [x] Parse local price/stock requests into typed intent contracts; the assistant remains rule-based.
-- [ ] Define a swappable AI provider interface and expand English/Kiswahili intent coverage.
-- [ ] Implement safe tools for products, order drafts, seller changes, quotes, travel, lessons, tickets and human handoff.
+- [x] Define a swappable AI provider interface and expand English/Kiswahili intent coverage.
+- [x] Define safe typed tools for products, order drafts, seller changes, quotes, travel, lessons, tickets and human handoff; execution remains local and review-only.
 - [x] For seller-owned local price/stock edits, require confirmation, show exact before/after values, write a browser-local audit entry and offer 30-second undo.
 - [x] Convert explicit quantity requests into a confirmed local cart draft; confirmation does not create an order or payment.
 - [x] Keep chat history in browser storage, provide quick prompts and a clear-history control; typing state remains.
-- [ ] Handoff prepares user-reviewed WhatsApp/email links only; it never sends automatically.
-- [ ] Test the requested commands and permission/confirmation edge cases.
+- [x] Handoff prepares user-reviewed WhatsApp/email links only; it never sends automatically.
+- [x] Test the requested commands and permission/confirmation edge cases.
 - [blocked] Live LLM/WhatsApp messaging requires approved server deployment, provider account, secrets and provider-side tests.
 
 ## Phase 4 — Language Academy
 
-- [ ] Cover English, French, Mandarin and Swahili at A1-C2 plus separate Native extension.
+- [x] Cover English, French, Mandarin and Swahili at A1-C2 plus separate Native extension.
+- [x] Add an initial reviewable flashcard surface alongside the lesson pathway.
+- [x] Record passed-assessment practice days and display a browser-local consecutive streak.
 - [ ] Write at least three full A1 and A2 units per language; label all higher-level content as outline/sample until complete.
 - [ ] Add vocabulary, grammar, reading, listening speech synthesis, available-device speaking, writing, flashcards/review, explained quizzes, pass-mark exams, streaks, printable non-accredited certificate and placement test.
 - [ ] Test progress, keyboard/accessibility behavior and missing browser speech APIs.
@@ -52,6 +63,7 @@ This roadmap compares the requested target with the existing implementation. Pre
 - [ ] Add route/fare ranges for JRO/ARK/DAR/ZNZ/NBO and packages with itineraries, inclusions/exclusions/group pricing.
 - [ ] Add filters/sort, enquiry review and explicit WhatsApp/email handoff actions.
 - [ ] Test date/guest/price calculations and empty/error states.
+- [blocked] Live courier GPS, sender notifications and shared order balances require an approved logistics/payment backend.
 - [blocked] Live hotel/flight inventory and confirmed bookings require authorized provider APIs and business credentials.
 
 ## Phase 6 — Backend and provider scaffolding
@@ -70,7 +82,8 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 - [ ] Add Playwright E2E and `npm run test:e2e` for marketplace, seller/assistant confirmation, academy, travel, unconfigured auth, mobile menu, deep links and 404.
 - [ ] Add CI for lint, typecheck, unit tests, build and E2E.
-- [ ] Add page metadata/OG/JSON-LD, sitemap/robots, PWA/offline page and CSP/security headers.
+- [x] Add baseline page metadata/OG tags, sitemap/robots, a web manifest and an offline shell service worker.
+- [ ] Add JSON-LD, CSP/security headers and a dedicated offline fallback page.
 - [ ] Download appropriately licensed photography, convert to local WebP, lazy-load, add alt text and image credits.
 - [ ] Add Privacy/Terms templates with lawyer-review warning and a cookie notice.
 - [ ] Fix the remaining TravelPlanningStudio React effect lint warning without disabling rules.
@@ -88,4 +101,4 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 ## Current next action
 
-Complete the remaining Phase 2 marketplace workflows. Continue subsequent phases in order. Keep provider-only or remote-schema actions visibly blocked until their stated prerequisites exist.
+Continue with the remaining product surfaces and release tests: vocabulary review, richer flashcard progression, speech fallbacks, travel edge cases, Playwright/CI coverage, and provider contract tests. Keep provider-only or remote-schema actions visibly blocked until their stated prerequisites exist.
