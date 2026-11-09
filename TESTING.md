@@ -28,7 +28,9 @@ mobile dimensions with one worker for deterministic local-storage workflows.
 - Language flashcard, assessment pass and local practice streak.
 - Assistant confirmation, cancellation and Undo.
 - Stories: save a local English/Kiswahili draft, preview a bounded cover image,
-  and confirm the pending moderation label. Community posts remain browser-local.
+  and confirm the pending moderation label. Start the seven-day habit challenge,
+  check in once, reload and verify local progress persists. Community posts and
+  challenge progress remain browser-local.
 - Mobile navigation at 320px and 390px, dark mode and unknown routes.
 
 ## Honest provider status

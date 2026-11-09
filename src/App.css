@@ -97,6 +97,246 @@
 .ui-table td { border-bottom: 1px solid var(--color-slate-300); padding: var(--space-3); text-align: left; vertical-align: top; }
 .story-cover-preview,
 .story-card > img { width: 100%; max-height: 16rem; border-radius: var(--radius-md); object-fit: cover; }
+
+.habit-guide,
+.community-habit-lab {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.25rem 0 1.5rem;
+  border: 1px solid rgba(18, 41, 25, 0.1);
+  border-radius: 1.25rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  background: linear-gradient(135deg, #fff8ed, #f2e8d8);
+}
+
+.habit-guide h2,
+.community-habit-lab h2 {
+  max-width: 22ch;
+  margin: 0.35rem 0 0;
+  color: #183221;
+}
+
+.habit-guide-grid,
+.community-habit-prompts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.habit-guide-grid article,
+.community-habit-prompts article {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background: rgba(255, 253, 249, 0.76);
+}
+
+.habit-guide-grid span {
+  color: #b65c2d;
+  font-weight: 800;
+}
+
+.habit-guide-grid h3,
+.community-habit-prompts h3 {
+  margin: 0;
+  color: #183221;
+}
+
+.habit-guide-grid p,
+.community-habit-prompts p {
+  margin: 0;
+  color: #536257;
+  font-size: 0.9rem;
+}
+
+.community-habit-lab {
+  background: linear-gradient(135deg, #173326, #244d39);
+  color: #fffaf1;
+}
+
+.community-habit-lab h2,
+.community-habit-lab__intro p {
+  color: #fffaf1;
+}
+
+.community-habit-lab__intro p {
+  max-width: 65ch;
+  margin-bottom: 0;
+  opacity: 0.82;
+}
+
+.community-habit-prompts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.community-habit-prompts article {
+  background: #fffaf1;
+}
+
+.community-habit-prompts .secondary-button {
+  justify-self: start;
+  margin-top: 0.5rem;
+}
+
+.habit-challenge {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0 1.5rem;
+  border: 1px solid rgba(18, 41, 25, 0.12);
+  border-radius: 1.25rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  background: #fffdf9;
+  box-shadow: 0 12px 30px rgba(25, 43, 32, 0.06);
+}
+
+.habit-challenge__heading,
+.habit-challenge__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.habit-challenge__heading h2 {
+  margin: 0.35rem 0 0;
+  color: #183221;
+}
+
+.habit-streak {
+  display: grid;
+  min-width: 5.5rem;
+  min-height: 5.5rem;
+  place-content: center;
+  border-radius: 50%;
+  background: #fff0d7;
+  color: #80421f;
+  text-align: center;
+}
+
+.habit-streak strong {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.habit-streak span {
+  font-size: 0.72rem;
+}
+
+.habit-challenge__start {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.habit-challenge__start > label {
+  color: #435344;
+  font-weight: 700;
+}
+
+.habit-challenge__start-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.habit-challenge__start-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.8rem;
+  border: 1px solid rgba(18, 41, 25, 0.18);
+  border-radius: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  background: #fff;
+  color: #1d2a1d;
+}
+
+.habit-challenge__active {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.habit-challenge__habit,
+.habit-challenge__footer p {
+  margin: 0;
+}
+
+.habit-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.habit-week__day {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  border: 1px solid #e3e5df;
+  border-radius: 0.7rem;
+  padding: 0.65rem 0.2rem;
+  color: #59645d;
+  font-size: 0.72rem;
+}
+
+.habit-week__day strong {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf0ec;
+  color: #34443a;
+  font-size: 0.95rem;
+}
+
+.habit-week__day.is-done {
+  border-color: #9dc5a5;
+  color: #1d6339;
+}
+
+.habit-week__day.is-done strong {
+  background: #1d6339;
+  color: #fff;
+}
+
+.habit-challenge__message {
+  margin: 0;
+  color: #1d6339;
+  font-size: 0.9rem;
+}
+
+.habit-challenge__note {
+  margin: 0;
+  color: #59645d;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .habit-guide-grid,
+  .community-habit-prompts {
+    grid-template-columns: 1fr;
+  }
+
+  .habit-challenge__heading,
+  .habit-challenge__footer,
+  .habit-challenge__start-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .habit-streak {
+    width: 4.5rem;
+    min-width: 4.5rem;
+    min-height: 4.5rem;
+  }
+
+  .habit-week {
+    gap: 0.25rem;
+  }
+
+  .habit-week__day {
+    font-size: 0.62rem;
+  }
+}
 .ui-empty-state { display: grid; gap: var(--space-2); place-items: center; padding: var(--space-7); border: 1px dashed var(--color-slate-300); border-radius: var(--radius-lg); text-align: center; }
 .ui-empty-state p { margin: 0; color: var(--color-slate-700); }
 .ui-stepper { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--space-3); padding: 0; list-style: none; }

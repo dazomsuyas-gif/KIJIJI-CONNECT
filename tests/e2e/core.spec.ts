@@ -85,13 +85,26 @@ test('story draft and community post remain local and reviewable', async ({ page
   await storyForm.getByLabel('Title', { exact: true }).fill('My Arusha day trip')
   await storyForm.getByLabel('Story text').fill('A local example story prepared for review.')
   await storyForm.getByRole('button', { name: /save for moderation/i }).click()
-  await expect(page.getByText(/pending review/i)).toBeVisible()
+  await expect(page.locator('.story-card').filter({ hasText: 'My Arusha day trip' }).getByText(/pending review/i)).toBeVisible()
   await page.goto('/community')
   const communityForm = page.locator('form').filter({ hasText: 'Publish to this browser' })
   await communityForm.getByLabel('Title', { exact: true }).fill('A useful community idea')
   await communityForm.getByLabel('Your post').fill('This post is stored only in this browser.')
   await communityForm.getByRole('button', { name: /publish to this browser/i }).click()
   await expect(page.getByRole('heading', { name: 'A useful community idea' })).toBeVisible()
+})
+
+test('habit challenge saves a daily check-in locally', async ({ page }) => {
+  await page.goto('/stories')
+  await page.getByLabel('What small action will you practise?').fill('Read one page after breakfast')
+  await page.getByRole('button', { name: 'Start my 7 days' }).click()
+  await expect(page.getByText('Your action: Read one page after breakfast')).toBeVisible()
+  await page.getByRole('button', { name: 'Check in for today' }).click()
+  await expect(page.getByRole('button', { name: 'Checked in today' })).toBeDisabled()
+  await expect(page.getByText('1 of 7 daily check-ins complete')).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('Your action: Read one page after breakfast')).toBeVisible()
+  await expect(page.getByText('1 of 7 daily check-ins complete')).toBeVisible()
 })
 
 test('keyboard navigation exposes visible focus', async ({ page }) => {

@@ -1635,6 +1635,18 @@ function App() {
 
         <section id="community" data-route-page="community" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Community • Local demo</span><h2>{t.headings.community}</h2></div></div>
+          <div className="community-habit-lab">
+            <div className="community-habit-lab__intro">
+              <span className="eyebrow">Habit Lab · Original community collection</span>
+              <h2>Small actions, shared progress.</h2>
+              <p>Use this space to exchange practical routines for business, learning, health and daily life. Share what you tried, what made it easier and what you will adjust next.</p>
+            </div>
+            <div className="community-habit-prompts">
+              <article><span className="badge badge--gold">7-day challenge</span><h3>One useful action</h3><p>Choose one action that takes less than five minutes and check in each day.</p><button type="button" className="secondary-button" onClick={() => setPostForm((current) => ({ ...current, room: 'Education & Careers', title: 'My 7-day small action', text: 'My small action is… Today I made it easier by…' }))}>Join with a post</button></article>
+              <article><span className="badge badge--green">Discussion prompt</span><h3>Design your environment</h3><p>What could you place, prepare or remove so your preferred routine becomes easier?</p><button type="button" className="secondary-button" onClick={() => setPostForm((current) => ({ ...current, room: 'Culture & Community Stories', title: 'A change I made to my environment', text: 'I changed my environment by… The result was…' }))}>Share an idea</button></article>
+              <article><span className="badge badge--green">Reflection</span><h3>Restart without shame</h3><p>Missed a day? Tell the community what helped you return instead of waiting for a perfect week.</p><button type="button" className="secondary-button" onClick={() => setPostForm((current) => ({ ...current, room: 'Business & Entrepreneurship', title: 'How I restarted a useful routine', text: 'I restarted by… The smallest next step is…' }))}>Start a reflection</button></article>
+            </div>
+          </div>
           <div className="phase-layout">
             <form className="phase-form" onSubmit={(event) => { event.preventDefault(); handleAddPost() }}>
               <label>Discussion room<select value={postForm.room} onChange={(event) => setPostForm((current) => ({ ...current, room: event.target.value }))}><option>Business & Entrepreneurship</option><option>Education & Careers</option><option>Tourism & Travel</option><option>Culture & Community Stories</option></select></label>

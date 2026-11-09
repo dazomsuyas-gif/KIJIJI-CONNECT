@@ -18,6 +18,7 @@ This roadmap compares the requested target with the existing implementation. Pre
 - [x] Add axe checks and keyboard-only coverage, then verify the required 320, 390, 768, 1280 and 1920px viewports have no horizontal overflow.
 - [x] Complete the reusable UI layer (form controls, modal, tabs, toast, skeleton, pagination, breadcrumbs, tooltip and table) using the existing token system.
 - [x] Finish the first honest browser-local `/stories` draft/moderation surface and cover it with a real browser test; community posting remains local and threaded/reaction work is still open.
+- [x] Add an original habit-building story collection and a personal seven-check-in challenge with streak tracking, local persistence and unit/browser tests.
 - [ ] Replace the inline delivery SVG with a Leaflet/OpenStreetMap adapter and retain a graceful offline destination-only fallback.
 - [ ] Split the large application shell and shared stylesheet into feature modules without changing existing routes or local workflows.
 - [ ] Add real local photography coverage and credits for hero, marketplace, travel and community surfaces; never hotlink remote images.
