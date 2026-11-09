@@ -19,10 +19,27 @@ This roadmap compares the requested target with the existing implementation. Pre
 - [x] Complete the reusable UI layer (form controls, modal, tabs, toast, skeleton, pagination, breadcrumbs, tooltip and table) using the existing token system.
 - [x] Finish the first honest browser-local `/stories` draft/moderation surface and cover it with a real browser test; community posting remains local and threaded/reaction work is still open.
 - [x] Add an original habit-building story collection and a personal seven-check-in challenge with streak tracking, local persistence and unit/browser tests.
-- [ ] Replace the inline delivery SVG with a Leaflet/OpenStreetMap adapter and retain a graceful offline destination-only fallback.
+- [x] Replace the inline delivery SVG with a lazy-loaded Leaflet/OpenStreetMap map, attribution, all Arusha destination markers, and a graceful offline destination-only fallback.
 - [ ] Split the large application shell and shared stylesheet into feature modules without changing existing routes or local workflows.
-- [ ] Add real local photography coverage and credits for hero, marketplace, travel and community surfaces; never hotlink remote images.
-- [ ] Run and record real E2E, axe and Lighthouse results; document provider-dependent work as not connected.
+- [x] Generate responsive local WebP variants from the verified credited photos, use them in the hero, produce listings and example stories, and document exact missing-photo slots without inventing credits.
+- [x] Run and record full E2E and axe checks; all tested routes have no serious or critical axe violations.
+- [x] Record Lighthouse 13.6.0 mobile baselines for home, marketplace, prices, orders and stories in `TESTING.md`.
+- [ ] Improve Lighthouse performance to the 90+ target; current scores are 62–77, with CLS 0.259 on prices/stories and 2.57s marketplace TBT.
+
+## Phase 8 — Arusha market prices and local estimates
+
+- [x] Add typed sample price observations across 12 products and 7 Arusha markets, with dates and source/status metadata.
+- [x] Add `/prices` search and product/category/market/date filters, sortable market averages, min/max/spread, lowest-average highlight and lightweight SVG charts.
+- [x] Link marketplace cards and product details to their corresponding price comparisons.
+- [x] Validate buyer price reports and keep them pending in the existing browser-local demo moderation queue until approved.
+- [x] Add a local price-forecast provider with moving average/regression, 7/14/30-day horizons, confidence, uncertainty and insufficient-data handling.
+- [x] Add local alerts and assistant compare/best-market/trend/alert-draft intents; alert changes require confirmation and local audit logging.
+- [x] Add focused unit and real desktop/mobile Playwright tests for comparison, reporting, moderation, estimates, alerts and assistant confirmations.
+- [x] Prepare a review-only Supabase migration for reference markets/products, moderated price reports and owner-scoped alerts with RLS; do not apply it remotely.
+- [x] Add CI workflow and responsive WebP optimizer for the verified local photo sources; document missing image slots and credits.
+- [ ] Populate the catalogue with independently verified market reports before treating comparisons or estimates as actionable.
+- [ ] Connect shared price reports, alerts and trusted moderator roles only after reviewing the target Supabase schema and credentials.
+- [ ] Run Lighthouse and add verified market/category/travel/community photos.
 
 ## Phase 1 — Routes, reliability and shared UI foundation
 
@@ -93,15 +110,17 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 ## Phase 7 — Release quality and content
 
-- [ ] Add Playwright E2E and `npm run test:e2e` for marketplace, seller/assistant confirmation, academy, travel, unconfigured auth, mobile menu, deep links and 404.
-- [ ] Add CI for lint, typecheck, unit tests, build and E2E.
-- [x] Add baseline page metadata/OG tags, sitemap/robots, a web manifest and an offline shell service worker.
-- [ ] Add JSON-LD, CSP/security headers and a dedicated offline fallback page.
-- [ ] Download appropriately licensed photography, convert to local WebP, lazy-load, add alt text and image credits.
-- [ ] Add Privacy/Terms templates with lawyer-review warning and a cookie notice.
-- [ ] Fix the remaining TravelPlanningStudio React effect lint warning without disabling rules.
-- [ ] Update README, PROJECT_STATUS, KNOWN_ISSUES, SETUP_GUIDE, INTEGRATIONS and CREDITS to match tested behavior.
-- [ ] Run all quality checks, browser workflows, confirm clean Git state and keep localhost responding.
+- [x] Add Playwright E2E for marketplace, seller/delivery, assistant confirmation, academy, travel, stories/community, mobile menu, dark mode and 404.
+- [x] Add axe checks, keyboard navigation and overflow coverage at 320, 390, 768, 1280 and 1920px.
+- [x] Add CI for lint, typecheck, unit tests, build and E2E.
+- [x] Add baseline page metadata/OG tags, JSON-LD, sitemap/robots, a web manifest and an offline shell service worker.
+- [x] Add legal/privacy templates with a lawyer-review warning; cookie consent and security-header review remain open.
+- [x] Run build, lint, unit tests, E2E, axe and Lighthouse; record results in `TESTING.md`.
+- [ ] Raise all target Lighthouse performance scores to 90+; the recorded mobile scores remain below target.
+- [ ] Finish splitting the large App shell and shared stylesheet into feature modules.
+- [ ] Source dedicated licensed market/category/travel/community photography, then optimize and add verified credits.
+- [ ] Finish threaded community replies/reactions, remaining travel and learning work, and re-check docs after those changes.
+- [ ] Confirm clean Git state, commit and push after all release gates are satisfied.
 
 ## Safety and truthfulness gates
 
@@ -114,4 +133,7 @@ This roadmap compares the requested target with the existing implementation. Pre
 
 ## Current next action
 
-Continue with the remaining product surfaces and release tests: vocabulary review, richer flashcard progression, speech fallbacks, travel edge cases, Playwright/CI coverage, and provider contract tests. Keep provider-only or remote-schema actions visibly blocked until their stated prerequisites exist.
+Improve the measured Lighthouse performance/layout-shift issues, finish the app/CSS
+feature split and remaining community/travel/learning work, source verified
+photography, and continue treating remote-provider/database tasks as blocked
+until their configuration and schema prerequisites are explicitly available.

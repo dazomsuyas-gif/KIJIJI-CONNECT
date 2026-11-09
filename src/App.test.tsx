@@ -137,7 +137,7 @@ describe('routed application shell', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('heading', { name: 'Recall this phrase' })).toBeVisible()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Recall this phrase' })).toBeVisible(), { timeout: 5000 })
     fireEvent.click(screen.getByRole('button', { name: 'Reveal answer' }))
     expect(screen.getByRole('button', { name: 'Hide answer' })).toBeVisible()
   })
@@ -148,6 +148,7 @@ describe('routed application shell', () => {
         <App />
       </MemoryRouter>,
     )
+    await waitFor(() => expect(screen.getByLabelText('A friendly greeting and self-introduction.')).toBeVisible(), { timeout: 5000 })
     const assessment = createLevelAssessment(languageCourses[0].levels[0])
     assessment.forEach((question) => fireEvent.click(screen.getByLabelText(question.options[question.answerIndex])))
     fireEvent.click(screen.getByRole('button', { name: 'Check my answers' }))
@@ -281,7 +282,7 @@ describe('routed application shell', () => {
 
     fireEvent.click(navigation.getByRole('link', { name: 'Travel' }))
     await waitFor(() => expect(document.querySelector('main')).toHaveAttribute('data-current-page', 'travel'))
-    expect(document.querySelectorAll('#travel-booking .travel-offer-card')).toHaveLength(3)
+    await waitFor(() => expect(document.querySelectorAll('#travel-booking .travel-offer-card')).toHaveLength(3), { timeout: 5000 })
   })
 
   it('shows a not-found page for an unknown URL', () => {
@@ -444,7 +445,7 @@ describe('routed application shell', () => {
     const avocadoCard = screen.getByRole('heading', { name: 'Fresh Avocado Grade A' }).closest('article')
     expect(avocadoCard).not.toBeNull()
     if (!avocadoCard) return
-    fireEvent.click(within(avocadoCard).getByRole('button', { name: 'Add Fresh Avocado Grade A to cart' }))
+    fireEvent.click(within(avocadoCard).getByRole('button', { name: 'Add to cart: Fresh Avocado Grade A' }))
     fireEvent.change(screen.getByLabelText('Quantity for Fresh Avocado Grade A'), { target: { value: '30' } })
     expect(screen.getAllByText(/96,000/)).toHaveLength(2)
 

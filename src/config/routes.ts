@@ -1,6 +1,7 @@
 export type AppPageId =
   | 'home'
   | 'marketplace'
+  | 'prices'
   | 'travel'
   | 'learning'
   | 'automation'
@@ -37,6 +38,7 @@ export type AppRoute = {
 export const appRoutes: AppRoute[] = [
   { path: '/', page: 'home', sectionId: 'home', title: 'Home' },
   { path: '/marketplace', page: 'marketplace', sectionId: 'marketplace', title: 'Marketplace' },
+  { path: '/prices', page: 'prices', sectionId: 'prices', title: 'Arusha market prices' },
   { path: '/travel', page: 'travel', sectionId: 'travel-booking', title: 'Travel planning' },
   { path: '/learning', page: 'learning', sectionId: 'learn-languages', title: 'Language academy' },
   { path: '/business-tools', page: 'automation', sectionId: 'automation', title: 'Business tools' },

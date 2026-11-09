@@ -13,6 +13,10 @@ without presenting local data as shared production data.
 - **Payments, email, WhatsApp Business, live travel inventory and AI:** not
   configured. Review-only links and local rule matching must not be described as
   automated provider integrations.
+- **Arusha prices:** `/prices` currently uses generated sample observations.
+  Reports and alerts are local browser data; no market-data provider or real
+  notification service is connected. The local forecast is an estimate, not a
+  guarantee.
 
 ## Safe configuration
 
@@ -45,3 +49,20 @@ explicit review before they are applied.
 
 Until these steps are complete, local/demo labels and not-configured messages
 are intentional product safety controls.
+
+## Price comparison migration (review only)
+
+`supabase/migrations/20261108120000_price_comparison.sql` defines reference
+markets/products, price reports and user-owned price alerts with row-level
+security. It has not been applied. First inspect the target project's existing
+schema and RLS policies using `supabase/inspection/schema_report.sql`, review
+the migration against that output, and confirm the moderator role claim is
+maintained only by trusted server-side administration in Supabase
+`app_metadata`. Do not assign a moderator role from browser code. Apply only
+after a separate explicit review and approval.
+
+To make prices real, collect dated seller/buyer observations from verified
+Arusha markets or contract an authorized data source; retain provenance and
+moderation history, replace local storage with an authenticated backend
+repository, and only then enable averages/estimates and alerts on approved
+records. The migration is a schema draft, not a configured connection.

@@ -19,9 +19,10 @@ To verify code changes:
 npm run lint
 npm test
 npm run build
+npm run test:e2e
 ```
 
-The project includes Vitest and Testing Library checks for routing, local persistence, illustrative marketplace filtering, and simulated cart/order records. Run the checks again after making local changes.
+The project includes Vitest and Testing Library checks for routing, local persistence, illustrative marketplace filtering, price estimates, and simulated cart/order records. Run the checks again after making local changes. `npm run test:e2e` runs the real-browser desktop and mobile flows. `npm run optimize:images` recreates WebP variants from the credited local source photos.
 
 ## 2. Check whether you already have Supabase
 

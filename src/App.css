@@ -345,6 +345,124 @@
 .ui-stepper li.is-complete { color: var(--color-success); font-weight: 700; }
 .ui-stepper li.is-complete span { border-color: var(--color-success); background: var(--color-success-soft); }
 
+.home-prices-teaser {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-5);
+  border: 1px solid var(--color-cream-200);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, var(--color-cream-50), var(--color-gold-100));
+}
+.home-prices-teaser h2 { margin: var(--space-2) 0; color: var(--color-forest-950); }
+.home-prices-teaser p { max-width: 62ch; margin: 0; color: var(--color-slate-700); }
+.prices-page { display: grid; gap: var(--space-5); }
+.prices-page > .section-heading h1 { margin: var(--space-2) 0; color: var(--color-forest-950); }
+.prices-toolbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-slate-300); border-radius: var(--radius-lg); background: var(--color-cream-50); }
+.prices-toolbar label,
+.price-report-form label,
+.forecast-panel .section-heading label { display: grid; gap: var(--space-2); color: var(--color-slate-700); font-size: var(--text-sm); font-weight: 700; }
+.prices-toolbar input,
+.prices-toolbar select,
+.price-report-form input,
+.price-report-form select,
+.forecast-panel select,
+.price-alert-panel input,
+.price-report-queue select { width: 100%; min-width: 0; min-height: 42px; border: 1px solid var(--color-slate-300); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); background: var(--color-white); color: var(--color-slate-950); }
+.prices-content-grid { display: grid; grid-template-columns: minmax(220px, 0.25fr) minmax(0, 1fr); align-items: start; gap: var(--space-5); }
+.prices-product-list { display: grid; gap: var(--space-2); position: sticky; top: var(--space-4); max-height: 70vh; overflow-y: auto; border: 1px solid var(--color-slate-300); border-radius: var(--radius-lg); padding: var(--space-3); background: var(--color-cream-50); }
+.prices-product-list h2 { margin: var(--space-2); font-size: var(--text-lg); }
+.prices-product { display: grid; gap: 3px; border: 1px solid transparent; border-radius: var(--radius-md); padding: var(--space-3); background: transparent; color: var(--color-slate-950); text-align: left; cursor: pointer; }
+.prices-product:hover,
+.prices-product.is-active { border-color: var(--color-forest-700); background: var(--color-forest-100); }
+.prices-product span { font-weight: 700; }
+.prices-product small { color: var(--color-slate-700); }
+.prices-main { display: grid; min-width: 0; gap: var(--space-4); }
+.best-market-card { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-forest-900); color: var(--color-white); }
+.best-market-card h2 { margin: var(--space-2) 0; color: var(--color-white); }
+.best-market-card p { margin: 0; opacity: 0.85; }
+.best-market-card > strong { color: #ffe19a; font-size: var(--text-xl); white-space: nowrap; }
+.prices-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.prices-stat-grid article { display: grid; gap: var(--space-2); border: 1px solid var(--color-slate-300); border-radius: var(--radius-md); padding: var(--space-3); background: var(--color-cream-50); }
+.prices-stat-grid span { color: var(--color-slate-700); font-size: var(--text-sm); }
+.prices-stat-grid strong { color: var(--color-forest-950); }
+.price-listing-comparison { margin: 0; border-left: 4px solid var(--color-gold-500); padding: var(--space-3); background: var(--color-gold-100); color: var(--color-slate-950); }
+.price-compare-link { color: var(--color-forest-800); font-weight: 700; }
+.prices-table-wrap { overflow-x: auto; border: 1px solid var(--color-slate-300); border-radius: var(--radius-md); background: var(--color-cream-50); }
+.prices-table { width: 100%; border-collapse: collapse; }
+.prices-table caption { padding: var(--space-3); color: var(--color-slate-950); font-weight: 700; text-align: left; }
+.prices-table th,
+.prices-table td { border-top: 1px solid var(--color-slate-300); padding: var(--space-3); color: var(--color-slate-950); text-align: left; vertical-align: top; }
+.prices-table thead th { background: var(--color-slate-100); }
+.prices-table thead button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.prices-table tbody th small { display: block; color: var(--color-slate-700); font-weight: 400; }
+.prices-table tr.is-cheapest { background: var(--color-success-soft); }
+.cheapest-tag { display: block; color: var(--color-success); font-size: var(--text-xs); font-weight: 700; }
+.prices-chart { overflow-x: auto; border: 1px solid var(--color-slate-300); border-radius: var(--radius-md); padding: var(--space-3); background: var(--color-cream-50); }
+.prices-chart svg { display: block; min-width: 560px; width: 100%; }
+.prices-chart text { fill: var(--color-slate-700); font-family: var(--font-body); font-size: 13px; }
+.prices-chart rect { fill: var(--color-forest-700); }
+.prices-updated,
+.prices-page__footnote { color: var(--color-slate-700); font-size: var(--text-sm); }
+.forecast-panel,
+.price-alert-panel,
+.price-report-panel { display: grid; gap: var(--space-3); border: 1px solid var(--color-slate-300); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-cream-50); }
+.forecast-panel .section-heading { align-items: end; }
+.forecast-panel h2,
+.price-alert-panel h2 { margin: var(--space-2) 0 0; }
+.forecast-honesty { border-radius: var(--radius-sm); padding: var(--space-2); background: var(--color-warning-soft); color: var(--color-warning); font-weight: 700; }
+.forecast-estimate { display: grid; gap: var(--space-1); }
+.forecast-estimate strong { color: var(--color-forest-900); font-size: var(--text-xl); }
+.forecast-estimate span,
+.forecast-estimate small { color: var(--color-slate-700); }
+.forecast-chart { overflow-x: auto; }
+.forecast-chart svg { display: block; width: 100%; min-width: 340px; border-bottom: 1px solid var(--color-slate-300); }
+.forecast-chart line { stroke: var(--color-slate-300); }
+.forecast-chart__history { fill: none; stroke: var(--color-forest-700); stroke-width: 3; }
+.forecast-chart__connector { stroke: var(--color-gold-700) !important; stroke-dasharray: 4 4; }
+.forecast-chart__band { stroke: var(--color-gold-500) !important; stroke-width: 8; opacity: 0.45; }
+.forecast-chart circle { fill: var(--color-gold-700); }
+.forecast-chart__legend { display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--color-slate-700); font-size: var(--text-sm); }
+.forecast-chart__legend span::before { display: inline-block; width: 12px; height: 12px; margin-right: var(--space-2); border-radius: 50%; background: var(--color-forest-700); content: ""; }
+.forecast-chart__legend span + span::before { background: var(--color-gold-500); }
+.price-alert-panel > p { margin: 0; color: var(--color-slate-700); }
+.price-alert-panel form { display: flex; align-items: end; gap: var(--space-3); }
+.price-alert-panel form label { display: grid; flex: 1; gap: var(--space-2); font-weight: 700; }
+.price-alert-panel ul { margin: 0; padding-left: var(--space-5); }
+.price-alert-panel li { margin: var(--space-2) 0; }
+.price-alert-trigger { border-left: 4px solid var(--color-success); padding: var(--space-3); background: var(--color-success-soft); }
+.price-report-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); align-items: end; }
+.price-report-form__note { grid-column: span 2; }
+.price-report-queue { display: grid; gap: var(--space-2); }
+.price-report-queue .section-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.price-report-queue article { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); border-top: 1px solid var(--color-slate-300); padding: var(--space-3) 0; }
+.price-report-queue article > div:first-child { display: grid; gap: var(--space-1); }
+.price-report-queue article span,
+.price-report-queue article small { color: var(--color-slate-700); }
+.price-report-queue article > div:last-child { display: flex; gap: var(--space-2); }
+.price-report-queue button { min-height: 36px; border: 1px solid var(--color-slate-300); border-radius: var(--radius-sm); padding: var(--space-2); background: var(--color-cream-50); color: var(--color-slate-950); cursor: pointer; }
+
+@media (max-width: 900px) {
+  .prices-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .prices-content-grid { grid-template-columns: 1fr; }
+  .prices-product-list { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 18rem; }
+  .prices-product-list h2 { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .home-prices-teaser,
+  .best-market-card,
+  .price-alert-panel form,
+  .price-report-queue .section-heading,
+  .price-report-queue article { align-items: stretch; flex-direction: column; }
+  .prices-toolbar,
+  .prices-stat-grid,
+  .price-report-form { grid-template-columns: 1fr; }
+  .prices-product-list { grid-template-columns: 1fr; }
+  .prices-stat-grid article { grid-template-columns: 1fr auto; align-items: center; }
+  .price-report-form__note { grid-column: auto; }
+  .best-market-card > strong { white-space: normal; }
+}
+
 .app-shell {
   --surface-page: #f4f6f8;
   --surface-card: #ffffff;
@@ -506,9 +624,9 @@ button {
 }
 
 .ghost-button {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f7fbf8;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--color-cream-50);
+  color: var(--color-forest-950);
+  border: 1px solid var(--color-slate-300);
 }
 
 .ghost-button.small {
@@ -554,6 +672,7 @@ textarea {
 
 .page-shell[data-current-page="home"] > section[data-route-page="home"],
 .page-shell[data-current-page="marketplace"] > section[data-route-page="marketplace"],
+.page-shell[data-current-page="prices"] > section[data-route-page="prices"],
 .page-shell[data-current-page="travel"] > section[data-route-page="travel"],
 .page-shell[data-current-page="learning"] > section[data-route-page="learning"],
 .page-shell[data-current-page="automation"] > section[data-route-page="automation"],
@@ -745,42 +864,20 @@ textarea {
   overflow: hidden;
   border: 1px solid #c8d8cf;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(229, 241, 233, 0.9), rgba(247, 244, 234, 0.95));
+  background: var(--color-cream-100);
 }
 
-.arusha-map svg {
-  display: block;
+.arusha-leaflet-map {
   width: 100%;
-  min-height: 220px;
-}
-
-.arusha-map__road {
-  fill: none;
-  stroke: rgba(138, 100, 28, 0.55);
-  stroke-width: 1.2;
-  stroke-linecap: round;
-}
-
-.arusha-map__road--secondary {
-  stroke: rgba(70, 105, 84, 0.55);
-  stroke-dasharray: 2 2;
-}
-
-.arusha-map__marker {
-  fill: var(--color-forest-700);
-  stroke: var(--color-white);
-  stroke-width: 0.8;
-}
-
-.arusha-map__marker--selected {
-  fill: var(--color-error);
-  stroke-width: 1.2;
+  min-height: 18rem;
+  z-index: var(--z-base);
 }
 
 .arusha-map__labels {
   display: grid;
   gap: 2px;
   padding: 0 var(--space-4) var(--space-4);
+  color: var(--text-primary);
 }
 
 .arusha-map__labels span {

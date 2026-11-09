@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { addHabitCheckIn, getCurrentStreak, getLocalDateKey, type HabitChallenge } from '../services/habitChallenge'
+import { getResponsivePhoto } from '../services/imageAssets'
 
 type Story = { id: number; title: string; language: string; author: string; text: string; cover?: string }
+const exampleCover = '/images/tanzania-landscape-960.webp'
 
 const habitStories: Story[] = [
   {
@@ -9,6 +11,7 @@ const habitStories: Story[] = [
     title: 'The two-minute start',
     language: 'English',
     author: 'Kijiji Connect editorial',
+    cover: exampleCover,
     text: 'When a goal feels too large, make the first action tiny: open the notebook, put on walking shoes, or write one sentence. A small start lowers the barrier and gives tomorrow a clear next step.',
   },
   {
@@ -16,6 +19,7 @@ const habitStories: Story[] = [
     title: 'Mazoea madogo, safari kubwa',
     language: 'Kiswahili',
     author: 'Kijiji Connect editorial',
+    cover: exampleCover,
     text: 'Badala ya kusubiri motisha kubwa, chagua hatua ndogo unayoweza kurudia kila siku. Weka kitabu karibu na kitanda, andika jambo moja la kujifunza, au tembea kwa dakika chache. Kurudia hujenga mwelekeo.',
   },
   {
@@ -23,6 +27,7 @@ const habitStories: Story[] = [
     title: 'Design the place, not just the promise',
     language: 'English',
     author: 'Kijiji Connect editorial',
+    cover: exampleCover,
     text: 'Your surroundings can make a choice easier. Keep the water bottle visible, prepare tomorrow’s study materials tonight, and move distractions out of reach. Good systems reduce the need for willpower.',
   },
 ]
@@ -151,7 +156,7 @@ export function StoriesPage() {
           </form>
         </article>
         {stories.length === 0 && <p className="empty-state">No local stories yet. Start with one of the prompts: “My Arusha day trip” or “A phrase I learned today”.</p>}
-        {stories.map((story) => <article className="phase-card story-card" key={story.id}>{story.cover && <img src={story.cover} alt="" loading="lazy" />}<span className="badge badge--gold">{story.language} · Pending review</span><h2>{story.title}</h2><p>{story.text}</p><small>{story.author} · example draft</small><button type="button" className="remove-listing" onClick={() => save(stories.filter((item) => item.id !== story.id))}>Delete local draft</button></article>)}
+        {stories.map((story) => <article className="phase-card story-card" key={story.id}>{story.cover && <img {...getResponsivePhoto(story.cover)} alt="" loading="lazy" />}<span className="badge badge--gold">{story.language} · Pending review</span><h2>{story.title}</h2><p>{story.text}</p><small>{story.author} · example draft</small><button type="button" className="remove-listing" onClick={() => save(stories.filter((item) => item.id !== story.id))}>Delete local draft</button></article>)}
       </div>
     </section>
   )

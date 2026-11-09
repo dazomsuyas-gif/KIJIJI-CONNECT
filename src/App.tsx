@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
 import './App.css'
 import { generateDemoContent } from './services/demoAi'
@@ -18,12 +18,9 @@ import { toolRequestForIntent } from './services/assistantTools'
 import { calculateCurrentStreak, recordPracticeDay } from './services/learningProgress'
 import { updateModerationRecord, type DemoRole, type ModerationRecord, type ModerationStatus } from './services/demoModeration'
 import {
-  languageCourses,
   type LearningLevelId,
 } from './services/languageLearning'
-import { LanguageLearningStudio } from './components/LanguageLearningStudio'
-import { SupabaseAuthPanel } from './components/SupabaseAuthPanel'
-import { StoriesPage } from './components/StoriesPage'
+import { getNextLearningLevel, languageCourseSummaries } from './services/languageCourseIndex'
 import { getRouteForPath, getRouteForTarget } from './config/routes'
 import { translations, type AppLanguage } from './config/translations'
 import { storageRepository } from './services/storageRepository'
@@ -47,15 +44,41 @@ import {
 } from './services/marketplaceCatalog'
 import type { TravelType } from './services/travelCatalog'
 import { arushaDeliveryPlaces, type DeliveryStatus } from './services/deliveryTracking'
-import {
-  TravelPlanningStudio,
-  type TravelAssistantCommand,
-  type TravelBookingRequest,
-} from './components/TravelPlanningStudio'
+import { arushaMarkets, matchPriceProduct, resolvePriceProductQuery } from './services/priceCatalog'
+import { getResponsivePhoto } from './services/imageAssets'
+import type { TravelAssistantCommand, TravelBookingRequest } from './components/TravelPlanningStudio'
+
+const LanguageLearningStudio = lazy(() =>
+  import('./components/LanguageLearningStudio').then((module) => ({ default: module.LanguageLearningStudio })),
+)
+const SupabaseAuthPanel = lazy(() =>
+  import('./components/SupabaseAuthPanel').then((module) => ({ default: module.SupabaseAuthPanel })),
+)
+const StoriesPage = lazy(() =>
+  import('./components/StoriesPage').then((module) => ({ default: module.StoriesPage })),
+)
+const TravelPlanningStudio = lazy(() =>
+  import('./components/TravelPlanningStudio').then((module) => ({ default: module.TravelPlanningStudio })),
+)
 
 const StandalonePages = lazy(() =>
   import('./components/StandalonePages').then((module) => ({ default: module.StandalonePages })),
 )
+const PricesPage = lazy(() =>
+  import('./components/PricesPage').then((module) => ({ default: module.PricesPage })),
+)
+
+function RouteSection({
+  page,
+  currentPage,
+  children,
+}: {
+  page: string
+  currentPage: string
+  children: () => ReactNode
+}) {
+  return currentPage === page ? children() : null
+}
 
 type Message = {
   id: number
@@ -81,6 +104,14 @@ type AssistantChangeProposal =
     quantity: number
     unit: string
     previousQuantity: number | null
+  }
+  | {
+    kind: 'price-alert'
+    id: number
+    productId: number
+    productName: string
+    priceProductId: string
+    targetPrice: number
   }
 
 type AssistantUndoAction =
@@ -157,6 +188,7 @@ type AutomationRun = {
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Marketplace', href: '/marketplace' },
+  { label: 'Prices', href: '/prices' },
   { label: 'Travel', href: '/travel' },
   { label: 'Learning', href: '/learning' },
   { label: 'Business tools', href: '/business-tools' },
@@ -174,6 +206,7 @@ const navItems = [
 const quickPrompts = [
   'Find avocado products',
   'Find a hotel in Arusha for 2 nights for 2 guests',
+  'Where is cement cheapest in Arusha?',
   'Start my Swahili learning path',
   'Contact support',
 ]
@@ -303,11 +336,12 @@ function ChatTranscript({
       </div>
       {pendingChange && (
         <section className="assistant-change-card" role="group" aria-label="Confirm proposed action">
-          <strong>{pendingChange.kind === 'listing-update' ? 'Confirm local listing change' : 'Confirm demo order draft'}</strong>
+          <strong>{pendingChange.kind === 'listing-update' ? 'Confirm local listing change' : pendingChange.kind === 'order-draft' ? 'Confirm demo order draft' : 'Confirm local price alert'}</strong>
           <p>{pendingChange.productName}</p>
           {pendingChange.kind === 'listing-update' && pendingChange.after.price !== undefined && <p>Price: {formatTzs(pendingChange.before.price)} → {formatTzs(pendingChange.after.price)}</p>}
           {pendingChange.kind === 'listing-update' && pendingChange.after.stockQuantity !== undefined && <p>Sample stock: {pendingChange.before.stockQuantity ?? 'unrecorded'} → {pendingChange.after.stockQuantity}</p>}
           {pendingChange.kind === 'order-draft' && <p>Requested quantity: {pendingChange.quantity} {pendingChange.unit}</p>}
+          {pendingChange.kind === 'price-alert' && <p>Alert target: at or below {formatTzs(pendingChange.targetPrice)}</p>}
           <small>Nothing changes until you confirm. This only edits browser-local sample data; no supplier is contacted and no order is placed.</small>
           <div className="assistant-change-actions">
             <button type="button" className="primary-button" onClick={onConfirmChange}>Confirm change</button>
@@ -325,7 +359,7 @@ function ChatTranscript({
 }
 
 const tourismPlaces = [
-  { title: 'Arusha National Park', location: 'Arusha', text: 'A scenic park with wildlife, mountain views and hiking routes close to the city.', image: '/tanzania-landscape.jpg', imageAlt: 'Representative savannah landscape; not a verified photograph of the park.' },
+  { title: 'Arusha National Park', location: 'Arusha', text: 'A scenic park with wildlife, mountain views and hiking routes close to the city.', image: '/images/tanzania-landscape-1600.webp', imageAlt: 'Representative savannah landscape; not a verified photograph of the park.' },
   { title: 'Olduvai Gorge', location: 'Ngorongoro', text: 'A significant archaeological site linked to human origins and ongoing research.', image: '/kijiji-travel-art.svg', imageAlt: 'Illustration inspired by Tanzania tourism.' },
   { title: 'Cultural Heritage Centre', location: 'Arusha', text: 'Discover arts, crafts, heritage displays and local knowledge.', image: '/kijiji-market-art.svg', imageAlt: 'Illustration of a local marketplace.' },
 ]
@@ -735,6 +769,40 @@ function App() {
         })
         reply = `I prepared a ${intent.quantity} ${product.unit} cart draft for ${product.name}. Confirm or cancel it below; this is not an order, booking or payment.`
       }
+    } else if (intent.type === 'price-query') {
+      const product = resolvePriceProductQuery(intent.productQuery)
+      if (!product) {
+        reply = `I could not match “${intent.productQuery}” to a product in the local Arusha sample price catalogue. Open Prices to browse the available sample data.`
+        actions = [{ label: 'Browse Arusha prices', href: '/prices' }]
+      } else {
+        const market = intent.marketQuery && intent.marketQuery.toLowerCase() !== 'arusha'
+          ? arushaMarkets.find((item) => item.name.toLowerCase().includes(intent.marketQuery!.toLowerCase())
+            || item.area.toLowerCase().includes(intent.marketQuery!.toLowerCase())
+            || intent.marketQuery!.toLowerCase().includes(item.id))
+          : undefined
+        const marketPart = market ? `&market=${market.id}` : ''
+        const priceRoute = `/prices?product=${encodeURIComponent(product.id)}${marketPart}`
+        if (intent.action === 'alert' && intent.targetPrice !== undefined) {
+          const listing = products.find((item) => item.name.toLowerCase().includes(product.name.toLowerCase()))
+          setPendingAssistantChange({
+            kind: 'price-alert',
+            id: createLocalId(),
+            productId: listing?.id ?? 0,
+            productName: product.name,
+            priceProductId: product.id,
+            targetPrice: intent.targetPrice,
+          })
+          reply = `I prepared a local price alert for ${product.name} at or below ${formatTzs(intent.targetPrice)}. Confirm or cancel it below. No notification will be sent outside this browser.`
+        } else {
+          navigate(priceRoute)
+          reply = intent.action === 'best'
+            ? `I opened the market comparison for ${product.name}${market ? ` around ${market.name}` : ''}. Review the sample averages; they are not verified quotes.`
+            : intent.action === 'trend'
+              ? `I opened the local ${product.name} price trend. Any forecast is an estimate from sample data, not a guarantee.`
+              : `I opened the price comparison for ${product.name}. All seeded observations are labelled sample data.`
+          actions = [{ label: 'Open Arusha price comparison', href: priceRoute }]
+        }
+      }
     } else if (intent.type === 'navigate') {
       if (intent.section === 'travel-booking') {
         const lowerMessage = trimmed.toLowerCase()
@@ -772,9 +840,8 @@ function App() {
             : /\b(?:chinese|mandarin)\b/i.test(trimmed)
               ? 'mandarin'
               : 'english'
-        const course = languageCourses.find((item) => item.id === courseId) ?? languageCourses[0]
-        const nextLesson = course.levels.find((level) => !completedLessons.includes(`${course.id}-${level.id}`))
-          ?? course.levels[0]
+        const course = languageCourseSummaries.find((item) => item.id === courseId) ?? languageCourseSummaries[0]
+        const nextLesson = getNextLearningLevel(course.id, completedLessons)
         setLearningLanguage(course.id)
         setLearningLevel(nextLesson.id)
         navigateToTarget('learn-languages')
@@ -820,9 +887,8 @@ function App() {
         reply = 'I could not find that demo workflow. Open Automation to review the available workflows.'
       }
     } else if (intent.type === 'complete-lesson') {
-      const course = languageCourses.find((item) => item.id === intent.lesson) ?? languageCourses[0]
-      const nextLesson = course.levels.find((level) => !completedLessons.includes(`${course.id}-${level.id}`))
-        ?? course.levels[0]
+      const course = languageCourseSummaries.find((item) => item.id === intent.lesson) ?? languageCourseSummaries[0]
+      const nextLesson = getNextLearningLevel(course.id, completedLessons)
       setLearningLanguage(course.id)
       setLearningLevel(nextLesson.id)
       navigateToTarget('learn-languages')
@@ -1057,9 +1123,30 @@ function App() {
         proposal.after.price === undefined ? null : `price ${formatTzs(proposal.before.price)} to ${formatTzs(proposal.after.price)}`,
         proposal.after.stockQuantity === undefined ? null : `stock ${proposal.before.stockQuantity ?? 'unrecorded'} to ${proposal.after.stockQuantity}`,
       ].filter(Boolean).join('; ')
-    } else {
+    } else if (proposal.kind === 'order-draft') {
       if (!handleUpdateCartQuantity(proposal.productId, String(proposal.quantity))) return
       action = `prepared a cart draft for ${proposal.quantity} ${proposal.unit}; no order was placed`
+    } else {
+      try {
+        const currentAlerts = storageRepository.read<Array<{ id: string; productId: string; targetTzs: number }>>('kijiji-connect-price-alerts', [])
+        storageRepository.write('kijiji-connect-price-alerts', [
+          { id: `assistant-${proposal.id}`, productId: proposal.priceProductId, targetTzs: proposal.targetPrice },
+          ...currentAlerts,
+        ])
+      } catch (error) {
+        console.error('Could not save the assistant-prepared local price alert.', error)
+        setStorageError(error instanceof Error ? error.message : 'Could not save this local price alert.')
+        return
+      }
+      appendAssistantAuditEntry({
+        id: proposal.id,
+        productId: proposal.productId,
+        productName: proposal.productName,
+        action: `saved a local price alert at or below ${formatTzs(proposal.targetPrice)}`,
+        createdAt: createLocalTimestamp(),
+      })
+      setPendingAssistantChange(null)
+      return
     }
     appendAssistantAuditEntry({
       id: proposal.id,
@@ -1463,7 +1550,10 @@ function App() {
         ) : (
           <>
         {storageError && <p className="storage-error" role="alert">{storageError}</p>}
-        {location.pathname === '/stories' && <StoriesPage />}
+        {location.pathname === '/stories' && <Suspense fallback={<p className="loading-state" role="status">Loading stories…</p>}><StoriesPage /></Suspense>}
+        <Suspense fallback={<p className="loading-state" role="status">Loading this page…</p>}>
+          {location.pathname === '/prices' && <PricesPage demoRole={demoRole} onDemoRoleChange={handleDemoRoleChange} />}
+        </Suspense>
         {standalonePage && (
           <Suspense fallback={<p className="loading-state" role="status">Loading this page…</p>}>
             <StandalonePages
@@ -1489,6 +1579,7 @@ function App() {
             />
           </Suspense>
         )}
+        <RouteSection page="home" currentPage={currentPage}>{() => (
         <section id="home" data-route-page="home" className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow">One platform · Tanzania-connected</span>
@@ -1537,7 +1628,7 @@ function App() {
           </div>
 
           <div className="hero-highlight">
-            <img className="hero-market-art" src="/tanzania-landscape.jpg" alt="Sunset over an open savannah landscape" />
+            <img className="hero-market-art" {...getResponsivePhoto('/tanzania-landscape.jpg')} alt="Representative open savannah landscape; not a verified location photograph." fetchPriority="high" />
             <div className="highlight-card large">
               <span className="card-label">Sample supplier</span>
               <h3>Fresh produce & construction essentials</h3>
@@ -1553,7 +1644,16 @@ function App() {
             </div>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="home" currentPage={currentPage}>{() => (
+        <section className="section-block home-prices-teaser" data-route-page="home" aria-labelledby="home-prices-heading">
+          <div><span className="eyebrow">Arusha price guide · sample data</span><h2 id="home-prices-heading">Compare everyday prices across local markets.</h2><p>Browse illustrative sample observations, contribute a price for review, and see a clearly labelled statistical estimate.</p></div>
+          <Link className="primary-button" to="/prices">Explore market prices</Link>
+        </section>
+        )}</RouteSection>
+
+        <RouteSection page="ai-studio" currentPage={currentPage}>{() => (
         <section id="ai-studio" data-route-page="ai-studio" className="section-block">
           <div className="section-heading">
             <div>
@@ -1576,7 +1676,9 @@ function App() {
             </div>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="automation" currentPage={currentPage}>{() => (
         <section id="automation" data-route-page="automation" className="section-block">
           <div className="section-heading">
             <div><span className="eyebrow">Business operations · Local workflow preview</span><h2>Make recurring business tasks easier to follow.</h2></div>
@@ -1596,24 +1698,30 @@ function App() {
           </div>
           {automationRuns.length > 0 && <div className="automation-history"><div className="history-heading"><h3>Recent demo runs</h3><button type="button" className="remove-listing" onClick={handleClearAutomationRuns}>Clear run history</button></div>{automationRuns.slice(0, 3).map((run) => <div key={run.id} className="automation-run"><strong>{run.workflow}</strong><span>{run.outcome}</span><small>{run.time}</small></div>)}</div>}
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="learning" currentPage={currentPage}>{() => (
         <section id="learn-languages" data-route-page="learning" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Language learning · CEFR-informed pathways</span>          <h2>{t.headings.learning}</h2></div></div>
-          <LanguageLearningStudio
-            completedLessonIds={completedLessons}
-            levelScores={lessonScores}
-            onLessonPassed={handlePassLearningModule}
-            languageId={learningLanguage}
-            onLanguageChange={setLearningLanguage}
-            levelId={learningLevel}
-            onLevelChange={setLearningLevel}
-            onPlacementSuggestion={setLearningLevel}
-            writingDrafts={writingDrafts}
-            onSaveWriting={handleSaveLearningWriting}
-            practiceStreak={calculateCurrentStreak(learningPracticeDays)}
-          />
+          {currentPage === 'learning' && <Suspense fallback={<p className="loading-state" role="status">Loading language lessons…</p>}>
+            <LanguageLearningStudio
+              completedLessonIds={completedLessons}
+              levelScores={lessonScores}
+              onLessonPassed={handlePassLearningModule}
+              languageId={learningLanguage}
+              onLanguageChange={setLearningLanguage}
+              levelId={learningLevel}
+              onLevelChange={setLearningLevel}
+              onPlacementSuggestion={setLearningLevel}
+              writingDrafts={writingDrafts}
+              onSaveWriting={handleSaveLearningWriting}
+              practiceStreak={calculateCurrentStreak(learningPracticeDays)}
+            />
+          </Suspense>}
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="travel" currentPage={currentPage}>{() => (
         <section id="travel-booking" data-route-page="travel" className="section-block travel-booking-section">
           <div className="section-heading">
             <div>
@@ -1622,17 +1730,21 @@ function App() {
             </div>
             <span className="status-pill">No live fares or hotel availability</span>
           </div>
-          <TravelPlanningStudio
-            category={travelCategory}
-            onCategoryChange={setTravelCategory}
-            query={travelQuery}
-            onQueryChange={setTravelQuery}
-            assistantCommand={travelAssistantCommand}
-            requests={travelRequests}
-            onRequestCreated={handleSaveTravelRequest}
-          />
+          {currentPage === 'travel' && <Suspense fallback={<p className="loading-state" role="status">Loading travel options…</p>}>
+            <TravelPlanningStudio
+              category={travelCategory}
+              onCategoryChange={setTravelCategory}
+              query={travelQuery}
+              onQueryChange={setTravelQuery}
+              assistantCommand={travelAssistantCommand}
+              requests={travelRequests}
+              onRequestCreated={handleSaveTravelRequest}
+            />
+          </Suspense>}
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="community" currentPage={currentPage}>{() => (
         <section id="community" data-route-page="community" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Community • Local demo</span><h2>{t.headings.community}</h2></div></div>
           <div className="community-habit-lab">
@@ -1661,7 +1773,9 @@ function App() {
             </div>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="destinations" currentPage={currentPage}>{() => (
         <section id="tourism-heritage" data-route-page="destinations" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Tourism & Heritage · Regional inspiration</span><h2>Explore Tanzania with local context.</h2></div></div>
           <div className="tour-grid">{tourismPlaces.map((place) => <article key={place.title} className="tour-card"><img src={place.image} alt={place.imageAlt} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} /><div className="tour-card__body"><span className="badge badge--gold">{place.location}</span><h3>{place.title}</h3><p>{place.text}</p><button type="button" className="secondary-button" onClick={() => {
@@ -1671,7 +1785,9 @@ function App() {
           }}>Explore nearby plans</button></div></article>)}</div>
           <p className="phase-note">Visitor details and availability should be confirmed with official destination operators before travel.</p>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="integrations" currentPage={currentPage}>{() => (
         <section id="integrations" data-route-page="integrations" className="section-block integration-section">
           <div className="section-heading">
             <div>
@@ -1703,7 +1819,9 @@ function App() {
             <a className="primary-button compact" href={whatsappUrl('Hello, I would like to discuss setting up secure email, WhatsApp Business, AI assistant, booking, and payment integrations for Kijiji Connect.')} target="_blank" rel="noreferrer">Contact about integrations</a>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="contact" currentPage={currentPage}>{() => (
         <section id="ai-assistant" data-route-page="contact" className="section-block assistant-section">
           <div className="section-heading">
             <div>
@@ -1772,7 +1890,9 @@ function App() {
             </div>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="marketplace" currentPage={currentPage}>{() => (
         <section id="marketplace" data-route-page="marketplace" className="section-block marketplace-section">
           <div className="section-heading">
             <div>
@@ -1808,7 +1928,7 @@ function App() {
                 <div className="campaign-device-products">
                   {products.slice(0, 3).map((product) => (
                     <Link key={product.id} to={`/products/${product.id}`} className="campaign-mini-product">
-                      <img src={product.image} alt="" loading="lazy" />
+                      <img {...getResponsivePhoto(product.image)} alt={`${product.name}; representative sample listing image`} loading="lazy" />
                       <span>{product.name}</span>
                       <strong>{formatTzs(product.price)}</strong>
                     </Link>
@@ -1973,7 +2093,7 @@ function App() {
               <article key={product.id} className="product-card">
                 <div className="product-image-wrap">
                     <Link to={`/products/${product.id}`} aria-label={`View ${product.name} details`}>
-                      <img src={product.image} alt={product.name} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} />
+                      <img {...getResponsivePhoto(product.image)} alt={`${product.name}; representative sample listing image`} loading="lazy" onError={(event) => { if (event.currentTarget.src.endsWith('/kijiji-product-art.svg')) event.currentTarget.hidden = true; else event.currentTarget.src = '/kijiji-product-art.svg' }} />
                     </Link>
                   <span className="product-status">{product.stock}</span>
                 </div>
@@ -1992,6 +2112,7 @@ function App() {
                       <span className="label">Retail</span>
                       <strong>{formatTzs(product.price)}</strong>
                     </div>
+                    {matchPriceProduct(product.name) && <Link className="price-compare-link" to={`/prices?product=${matchPriceProduct(product.name)?.id}`}>Compare with market prices</Link>}
                     <div>
                       <span className="label">Wholesale</span>
                       <strong>{formatTzs(product.wholesalePrice)}</strong>
@@ -2014,7 +2135,7 @@ function App() {
                       <button
                         type="button"
                         className="secondary-button add-to-cart-button"
-                        aria-label={`Add ${product.name} to cart`}
+                        aria-label={`Add to cart: ${product.name}`}
                         onClick={() => handleAddToCart(product)}
                       >
                         {cartItems.find((item) => item.productId === product.id)
@@ -2044,7 +2165,9 @@ function App() {
             </nav>
           )}
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="payments" currentPage={currentPage}>{() => (
         <section id="payments" data-route-page="payments" className="section-block">
           <div className="section-heading">
             <div><span className="eyebrow">Tanzania payment methods • Sandbox</span><h2>Choose a familiar way to pay</h2></div>
@@ -2091,7 +2214,9 @@ function App() {
             ))}
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="activity" currentPage={currentPage}>{() => (
         <section id="notifications" data-route-page="activity" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Notifications</span><h2>Recent activity in this browser</h2></div>{notifications.length > 0 && <button type="button" className="ghost-button small notification-clear" onClick={handleClearNotifications}>Clear notifications</button>}</div>
           <div className="phase-list">
@@ -2099,15 +2224,19 @@ function App() {
             {notifications.map((item) => <article key={item.id} className="phase-card notification-card"><div><h3>{item.title}</h3><p>{item.text}</p></div><small>{item.time}</small><button type="button" className="remove-listing" aria-label={`Dismiss ${item.title}`} onClick={() => handleRemoveNotification(item.id)}>Dismiss</button></article>)}
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="account" currentPage={currentPage}>{() => (
         <section id="my-account" data-route-page="account" className="section-block">
           <div className="section-heading"><div><span className="eyebrow">MY ACCOUNT · AUTHENTICATION SETUP</span><h2>{t.headings.account}</h2></div></div>
           <div className="account-grid">
-            <SupabaseAuthPanel />
+            {currentPage === 'account' && <Suspense fallback={<p className="loading-state" role="status">Loading account setup…</p>}><SupabaseAuthPanel /></Suspense>}
             <article className="phase-card"><h3>Workspace activity</h3><ul className="activity-list"><li>Marketplace listings: {products.length}</li><li>Cart items: {cartLines.reduce((total, line) => total + line.quantity, 0)}</li><li>Demo order records: {orderRecords.length}</li><li>Content drafts: {drafts.length}</li><li>Community posts: {posts.length}</li><li>Lessons completed: {completedLessons.length}</li></ul></article>
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="home" currentPage={currentPage}>{() => (
         <section className="section-block supplier-section" data-route-page="home">
           <div className="section-heading">
             <div>
@@ -2147,7 +2276,9 @@ function App() {
             })}
           </div>
         </section>
+        )}</RouteSection>
 
+        <RouteSection page="home" currentPage={currentPage}>{() => (
         <section className="section-block insight-section" data-route-page="home">
           <div className="feature-panel">
             <div>
@@ -2161,6 +2292,7 @@ function App() {
             </ul>
           </div>
         </section>
+        )}</RouteSection>
           </>
         )}
       </main>

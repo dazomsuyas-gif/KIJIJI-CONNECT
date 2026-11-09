@@ -1,94 +1,69 @@
-# NEXT PHASE: Complete provider-backed marketplace and release testing
-
 # Kijiji Connect project status
 
 Last reviewed: 2026-11-08
 
-## Current architecture
+## Current state
 
-- React 19, TypeScript 7, Vite 8 application with a React Router route shell for existing modules.
-- Node.js v24.20.0 and npm 11.19.0 are available in the current Windows environment.
-- Package commands: `npm run dev`, `npm run build`, `npm run lint`, `npm test`, and `npm run preview`.
-- Styling uses CSS variables with Times New Roman typography; English/Kiswahili navigation and selected headings, persistent light/dark preference, accessible mobile navigation, reduced-motion support, and Vercel deep-link fallback are implemented.
-- Direct paths are available for the main modules plus product/supplier details, cart, orders, seller/admin demo boundaries, assistant, testing guide, articles, about, FAQ and legal templates.
-- Browser storage access for local application data now uses `src/services/storageRepository.ts`.
-- UI modules include marketplace, demo checkout, locally stored content/community, language practice, illustrative travel enquiries, and a local intent-matching assistant.
-- The Supabase JavaScript client and lazy browser-client scaffold are present. The Supabase package is code-split and dynamically loaded. The account screen includes email sign-up, sign-in, password recovery and update, and sign-out, wired to Supabase Auth when configuration is available.
-- No backend, database migrations, server-side endpoints, automated administrator area, or live third-party integration has been verified in the workspace.
+Kijiji Connect is a React 19, TypeScript 7, Vite 8 and React Router application. The
+site includes marketplace, travel planning, language practice, stories/community,
+assistant, seller/admin preview, orders and Arusha sample-price routes. Existing
+URLs remain available. Standalone pages and selected feature modules are lazy
+loaded; the route shell only renders the active section.
 
-## Verified state
+The forest/cream/gold design tokens, Times New Roman font variable, light/dark
+theme, English/Kiswahili navigation, responsive menu, shared UI primitives,
+reduced-motion styles, metadata, sitemap, robots file and a local image optimizer
+are present. A few credited local images have responsive WebP variants; other
+requested category and destination photos are still missing and listed in
+`public/images/README.md`.
 
-- Latest production build and TypeScript check: passed with `npm run build`; standalone pages remain in a separate lazy chunk.
-- Latest lint: passed with `npm run lint` and no warnings.
-- Latest automated test run: 75 tests passed across 12 files using Vitest and Testing Library.
-- Redesign foundation: centralized tokens, reusable UI primitives, local photo credits, a `/test-guide` route, `TESTING.md`, Open Graph image metadata and JSON-LD were added without changing existing workflows.
-- Latest `git diff --check` passed; Git emitted only expected LF-to-CRLF working-copy notices.
-- Phase 1 routing/design foundation was committed and pushed as `2030566` on `main`, tracking `origin/main`.
-- Phase 2 discovery and simulated cart/order work was committed and pushed as `fab2495` and `da5b9b0`; the working tree was clean after the push.
-- The existing Vite server on `http://localhost:5173/` remained available during final browser checks.
-- Browser-verified marketplace behavior before Phase 2: 6 initial sample listings; B2B and B2C each show 5; Electronics shows 1; a no-match search shows 0. A temporary local listing was added with the expected “Contact to confirm” stock state, then removed. The checkout required a mobile number and explicitly stated that it was simulation-only; no payment provider was contacted. Browser-local test data was restored afterward.
-- Browser-verified travel behavior: stay, flight and package tabs each show illustrative options; an Arusha stay enquiry generated review-only WhatsApp/email drafts and clearly stated that no reservation or message was made. The local itinerary builder produced a plan. Test data was restored afterward.
-- Browser-verified language behavior: the English A1 practice assessment passed at 3/3, writing practice saved locally, and both were restored after the test. The result is not a certificate or official CEFR assessment.
-- Browser-verified local workflows: AI Studio content draft, community post, and order-follow-up demo workflow were created and removed/restored without publishing or sending anything externally.
-- All 13 primary navigation links resolve to application routes. Desktop (1280 px) and mobile (390 px) viewport checks found no horizontal overflow. Fresh browser console errors, page errors, and failed requests were zero during route checks. The local logo and image assets returned HTTP 200.
-- All supplied contact destinations were present in the rendered page, including `https://wa.me/255768868546`, the three exact email addresses, and both Instagram profiles.
-- Router browser checks: direct `/marketplace` loads and survives refresh; route-specific page section and title render; navigation and browser back work; unknown paths show a 404 page; Kiswahili navigation/headings and dark-theme preference persist; mobile menu opens at 390px without horizontal overflow.
-- Phase 2 browser checks: 41 illustrative listings render with 12-item pages; combined B2C/category/location/min/max/sample-availability filters preserve the full URL and return the expected chai sample; price sorting and page-2 state survive refresh; home search and local assistant find an avocado listing; the local cart recalculates wholesale pricing at MOQ, persists across refresh, and creates only a `SIMULATED` order record after the clearly labelled sandbox step. The cart clears after the simulation. Hotel intent still transfers to travel. At 390px marketplace/cart views have no horizontal overflow. No browser console errors, page errors, or failed requests were observed during successful checks.
-- Current route-foundation browser checks: product details and supplier profiles show explicitly unverified sample data; quote handoff is a user-directed WhatsApp link, not an automated send. A real click added a product to the browser-local cart, and the header cart link displayed the item and indicative subtotal. The footer Orders link reached the honest empty demo-order view. Mobile navigation opened at 320px; unknown paths render the 404 page. Document scroll width matched the 320px viewport.
-- Seller workflow browser checks: created a local listing, edited its price and stock, then deleted it; temporary test data was removed.
-- Seller listing form now accepts up to three JPEG/PNG/WebP images at 512 KB each, previews the selected gallery, and saves it only in browser storage. Product detail pages expose saved media as a thumbnail gallery. Automated coverage verifies preview and local persistence.
-- The demo moderation page supports browser-local pending/approved/rejected listing decisions, a role switcher, and moderator-only controls in the preview. It does not publish listings or provide authorization.
-- Phase 3 now has an `AssistantProvider` abstraction with the local rule provider selected explicitly. Common English/Kiswahili navigation and support phrases are covered by automated tests; no live AI provider is configured.
-- Phase 3 safe-tool contracts now cover product search, order drafts, seller proposals, quote/travel/lesson actions, support tickets and review-only WhatsApp/email handoffs. Confirmation and external-side-effect metadata are explicit; no message is sent automatically.
-- The visual system now uses a professional blue/white light theme with a dark charcoal alternative, improved spacing, cards, controls and responsive layout. The Learning Academy includes a reviewable flashcard surface alongside its lesson, writing and assessment workflows.
-- Learning practice passes now persist a browser-local calendar day and display the current consecutive practice streak; the streak is not synced across devices or accounts.
-- Marketplace checkout now captures an Arusha delivery place and landmark, calculates simulated paid and outstanding balances from a partial-payment field, and exposes sender acceptance, dispatch and delivery states with a local Arusha coordinate view. Live logistics GPS and shared settlement remain unconfigured.
-- Seller workspace now lists local orders with balance, Accept good and Send good actions. Orders show an inline coordinate-based Arusha destination map and selected delivery point; it is not a live driver GPS feed.
-- Playwright E2E is now configured with Chromium desktop/mobile projects. The 18-test suite covers homepage accessibility, mobile Escape behavior, marketplace checkout, seller acceptance/dispatch, order balance and destination, travel enquiry, learning, assistant, dark mode, 404, stories/community, keyboard focus and the required viewport overflow checks.
-- Reusable UI primitives now include Input, Select, Textarea, Modal with focus trap/Escape, Tabs, Toast, Skeleton, Pagination, Breadcrumbs, Tooltip and Table, all styled through token-backed classes.
-- `/stories` now provides browser-local English/Kiswahili story drafts with bounded cover previews and an explicit pending-moderation state; it does not claim public publishing.
-- Stories now include an original habit-building collection and a seven-day personal challenge tracker. Habit selection, daily check-ins, completion and streak are saved in this browser only; there is no public leaderboard or account sync.
-- Release scaffolding now includes a web manifest, offline shell service worker, robots file, sitemap, and an explicit typed backend capability boundary. These do not imply that shared persistence or provider integrations are live.
-- Phase 2 closeout checks completed on localhost: direct moderation route rendered, browser-local moderator role persisted after reload, and the 390px moderation view had no horizontal overflow. Localhost returned HTTP 200 after the checks.
-- Assistant browser checks: price/stock changes remained pending until confirmed, showed exact before/after values, appeared in the local audit log, and were reverted with Undo. A quantity request created only a confirmed local cart draft; Undo cleared it. Temporary test state was removed.
-- Local server check: `http://localhost:5173/` returned HTTP 200 and remained owned by the existing Vite process (PID 21676) after verification.
-- `.env.local`, `.env`, `.env.development.local`, and `.env.production.local` were not present when checked. No environment values were printed or collected.
-- The `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and legacy `VITE_SUPABASE_ANON_KEY` environment variables were checked for presence only; none was configured.
-- Added `supabase/inspection/schema_report.sql`, a read-only metadata report; no Supabase project configuration or database schema export is present.
+## Latest verification
 
-## Supabase status and blocker
+- `npm run build`: passed; TypeScript build and Vite production bundle completed.
+- `npm run lint`: passed.
+- `npm test -- --run`: 99 tests passed across 17 files.
+- `npm run test:e2e -- --workers=1`: 26 Playwright tests passed across desktop
+  Chromium and the 390px mobile project. Coverage includes real browser
+  interactions, keyboard navigation, axe, delivery map fallback and the
+  marketplace, seller, travel, learning, stories, prices, assistant and 404 flows.
+- Responsive E2E checks passed at 320, 390, 768, 1280 and 1920px without horizontal
+  overflow. Axe checks found no serious or critical violations on tested routes.
+- Lighthouse 13.6.0 was run against the production preview using its default
+  mobile configuration. Home: 74/98/100/92; marketplace: 70/98/100/92; prices:
+  69/100/100/91; orders: 77/100/100/91; stories: 62/100/100/92 (performance /
+  accessibility / best practices / SEO). Performance remains below the 90 target.
+  The measured CLS was 0.259 on prices and stories and marketplace TBT was 2.57s.
+- `http://localhost:5173/` and the production preview at `http://127.0.0.1:4173/`
+  returned HTTP 200 after verification. Keep the existing development server on
+  port 5173 running.
 
-It is not possible to determine from this local workspace whether the owner has a Supabase account/project or whether a remote database contains tables or data. No project URL, publishable key, connection, or schema report is available locally. Database emptiness must not be assumed.
+## Current preview behavior
 
-Do not apply migrations, create or alter policies, reset a project, or inspect customer rows until the user identifies the intended Supabase project and provides a reviewed schema-only metadata report. The read-only query script is at `supabase/inspection/schema_report.sql`.
+- Products and Arusha prices are illustrative sample data. Price reports and
+  alerts are local; unapproved reports do not count in averages, and forecasts
+  are statistical estimates from sample data, not a guarantee.
+- Checkout and payment records are simulated. Order balance, sender acceptance,
+  dispatch and delivery states are browser-local preview data.
+- The Leaflet/OpenStreetMap map identifies delivery destinations and has an
+  offline tile fallback. It does not show a live driver or courier GPS position.
+- Travel cards/prices are illustrative; enquiries are not bookings. Stories,
+  community posts, moderation and learning progress are browser-local.
+- The assistant is local rule matching, not a connected AI model. Messages are
+  not sent automatically; user-reviewed contact links are handoffs only.
 
-## Current customer-facing limitations
+## Remaining work and blockers
 
-- Marketplace, community, notifications, learning progress, and enquiry records use browser-local/demo state rather than shared persistent records.
-- Payment flows are simulations; no provider receives a payment request.
-- Travel catalog and prices are illustrative; enquiries are not bookings or confirmations.
-- The assistant uses local intent matching and does not call an AI model or WhatsApp Business API. It can prepare seller-owned local listing price/stock changes; a user must confirm the exact change before it is persisted, and a local audit entry plus 30-second undo are provided.
-- Supabase authentication UI and client calls are implemented but cannot be exercised until project settings are configured. There is no verified authenticated session, role authorization, server-side order processing, or administrator dashboard.
+- Performance still needs improvement before the Lighthouse 90+ goal is met;
+  investigate main-thread/style-layout cost and lazy-route layout shifts.
+- App.tsx and App.css have not been fully separated into per-feature modules.
+- Dedicated, verified photographs for markets, categories, travel destinations
+  and community still need sourcing and licensing; do not invent photo credits.
+- Community still needs threaded replies, reactions and stronger moderation
+  workflows. Several travel and learning features remain partial previews.
+- No shared backend, trusted moderator roles, live payment, courier GPS,
+  WhatsApp Business, email provider, or remote LLM is configured.
+- The Supabase price schema is review-only and has not been applied. Do not apply
+  it until the intended project schema and RLS policies are reviewed.
 
-## Current phased implementation
-
-- Phase 1 foundation: original shell was pushed in `2030566`; direct product/supplier/cart/order/seller/admin/assistant/editorial/legal routes, lazy standalone pages, an ErrorBoundary, tests, footer sitemap, and product-to-supplier/cart navigation were pushed in `988c015`.
-- Phase 2 commerce: pushed commits `fab2495` and `da5b9b0` add a 41-item illustrative catalogue, URL-synced filters/sorting/pagination, a browser-persistent cart, and clearly simulated checkout/order history. The local seller workflow adds a browser-local listing repository with owner checks, validated price/stock edits, deletion confirmation and low-stock alerts. A real browser workflow created, edited and deleted a sample listing; the stock alert updated and test data was removed afterward. This owner check is editable browser data, not real authorization. Image gallery, secure order lifecycle, seller order/sales views, moderation, and server-backed repository integration remain to be built.
-- Phase 3 assistant progress: typed local intents recognize price/stock changes for a listing owned by the browser-local demo seller and quantity requests such as “Order 50kg avocado”. Listing changes show exact values and remain unchanged until confirmation; quantity requests create only a confirmed cart draft, never an order. Confirmed changes write a browser-local audit entry and offer a 30-second Undo. Browser checks verified pre-confirmation state, confirmation, audit persistence and undo; clear-chat resets the saved conversation while retaining its greeting. Temporary test listing and generated audit entries were removed. This is not live AI or secure authorization. Other tools, handoff tickets and typing state remain unimplemented.
-- Remaining work across phases 2–7 includes image gallery, secure order workflow, seller/admin processes, broader agent tools and academy content, fuller travel offers, schema-reviewed optional integrations, CI/E2E/SEO/PWA and licensed image optimization.
-
-## Immediate next action
-
-Continue with remaining provider-backed logistics and marketplace work only after reviewed backend configuration is supplied. The local delivery workflow is complete for preview purposes. Supabase remains optional; before proposing migrations, identify the intended remote project and review its existing schema and RLS policies using `supabase/inspection/schema_report.sql`. Never share credentials, passwords, private keys, or customer data; never put a service-role key in the browser.
-
-## Files changed by the latest implementation cycle
-
-- Added this status report, implementation checklist, known-issues register, beginner setup guide, and read-only schema inspection SQL.
-- Added a Supabase Auth account interface for email registration, sign-in, recovery email, recovery password update, and sign-out. It fails clearly into setup guidance when project configuration is missing. Live auth remains unverified.
-- Supabase SDK is dynamically imported only when configured, avoiding its dependency cost in the initial bundle; malformed URLs return actionable setup feedback.
-- Added auth-specific styles and replaced the hard-coded demo account identity in the account area.
-- Updated README and setup/known-issues docs to describe the auth capability and limits.
-- No environment configuration or database was changed.
-- Centralized public phone/WhatsApp, email and Instagram values and corrected the secondary email to the exact user-supplied `kelvinmsuya63@gmai.com`.
-- Added direct URLs for existing site modules, metadata updates, localized nav/headings, a responsive mobile menu, light/dark preference, a shared local-storage adapter, and a Vercel SPA fallback.
-- Added Vitest/Testing Library configuration and route, storage, and application-shell tests. No remote database, payment provider, AI service, or messaging channel was changed.
+See `IMPLEMENTATION_PLAN.md`, `KNOWN_ISSUES.md`, `INTEGRATIONS.md` and
+`TESTING.md` for detailed gaps and safe setup steps.

@@ -8,6 +8,10 @@ export type AssistantToolName =
   | 'travel.prepare-enquiry'
   | 'lessons.open'
   | 'tickets.prepare-handoff'
+  | 'prices.compare'
+  | 'prices.best-market'
+  | 'prices.trend'
+  | 'prices.alert-draft'
 
 export type AssistantToolRequest = {
   tool: AssistantToolName
@@ -58,6 +62,20 @@ export function toolRequestForIntent(intent: DemoAssistantIntent): AssistantTool
       return null
     case 'contact':
       return { tool: 'tickets.prepare-handoff', input: {}, requiresConfirmation: true, externalSideEffect: 'opens-user-review' }
+    case 'price-query':
+      return {
+        tool: intent.action === 'best' ? 'prices.best-market'
+          : intent.action === 'trend' ? 'prices.trend'
+            : intent.action === 'alert' ? 'prices.alert-draft'
+              : 'prices.compare',
+        input: {
+          productQuery: intent.productQuery,
+          ...(intent.marketQuery ? { marketQuery: intent.marketQuery } : {}),
+          ...(intent.targetPrice !== undefined ? { targetPrice: intent.targetPrice } : {}),
+        },
+        requiresConfirmation: intent.action === 'alert',
+        externalSideEffect: 'none',
+      }
     default:
       return null
   }

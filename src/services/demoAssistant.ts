@@ -33,6 +33,7 @@ export type DemoAssistantIntent =
   | { type: 'complete-lesson'; lesson: 'english' | 'french' | 'mandarin' | 'swahili' }
   | { type: 'contact' }
   | { type: 'checkout'; productQuery: string }
+  | { type: 'price-query'; action: 'compare' | 'best' | 'trend' | 'alert'; productQuery: string; marketQuery?: string; targetPrice?: number }
   | { type: 'help' }
 
 const sectionAliases: Record<AssistantSection, string[]> = {
@@ -59,6 +60,34 @@ export function resolveDemoAssistantIntent(input: string): DemoAssistantIntent {
     const match = (Object.entries(sectionAliases) as [AssistantSection, string[]][])
       .find(([, aliases]) => aliases.some((alias) => requestedSection.includes(alias)))
     if (match) return { type: 'navigate', section: match[0] }
+  }
+
+  const alertRequest = /(?:alert|notify|remind)\s+(?:me\s+)?(?:when\s+)?(?:the\s+)?(.+?)\s+(?:is|are)\s+(?:below|under|at or below|less than)\s+([\d,]+)/i.exec(input.trim())
+    ?? /(?:niarifu|ukumbusho)(?:\s+bei ya)?\s+(.+?)\s+chini ya\s+([\d,]+)/i.exec(input.trim())
+  if (alertRequest) {
+    const targetPrice = Number(alertRequest[2].replaceAll(',', ''))
+    if (Number.isSafeInteger(targetPrice) && targetPrice > 0) {
+      return { type: 'price-query', action: 'alert', productQuery: alertRequest[1].trim().replace(/\b(?:is|are)\s*$/i, ''), targetPrice }
+    }
+  }
+
+  if (!/^(?:please\s+)?(?:set|change|update)\b/i.test(normalized)
+    && /\b(?:price|prices|cheapest|compare prices|price trend|bei|nafuu|gharama)\b/i.test(normalized)) {
+    const bestRequest = /\b(?:where is|find where|cheapest|lowest)\s+(.+?)\s+(?:cheapest|lowest|in)\b/i.exec(input.trim())
+    const swahiliRequest = /\bbei ya\s+(.+?)\s*[.!?]*$/i.exec(input.trim())
+    const genericRequest = /\b(?:price|prices|trend|compare|bei|gharama|nafuu)\b\s*(?:of|for|ya|za)?\s+(.+?)\s*[.!?]*$/i.exec(input.trim())
+    const marketQuery = input.match(/\b(Kilombero|Soko Kuu|Njiro|Sakina|Shoprite|Arusha Central)\b/i)?.[1]
+    const swahiliProductQuery = swahiliRequest?.[1]?.replace(/\s+(Kilombero|Soko Kuu|Njiro|Sakina|Shoprite|Arusha Central)\s*$/i, '')
+    const productQuery = bestRequest?.[1] ?? swahiliProductQuery ?? genericRequest?.[1]
+    if (productQuery) {
+      const localizedMarketQuery = marketQuery ?? input.match(/\b(?:in|at|near)\s+(Kilombero|Soko Kuu|Njiro|Sakina|Arusha Central|Shoprite|Arusha)\b/i)?.[1]
+      const action = /\b(?:trend|forecast|estimate|utabiri|mwelekeo)\b/i.test(normalized)
+        ? 'trend'
+        : bestRequest || /\b(?:cheapest|lowest|nafuu)\b/i.test(normalized)
+          ? 'best'
+          : 'compare'
+      return { type: 'price-query', action, productQuery: productQuery.trim(), ...(localizedMarketQuery ? { marketQuery: localizedMarketQuery } : {}) }
+    }
   }
 
   const priceRequest = /^(?:please\s+)?(?:set|change|update)\s+(?:the\s+)?(?:retail\s+)?price\s+(?:of|for)\s+(.+?)\s+(?:to|at)\s+([\d,]+)(?:\s*(?:tsh|tzs))?[.!?]*$/i.exec(input.trim())

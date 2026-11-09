@@ -55,4 +55,28 @@ describe('local assistant marketplace routing', () => {
       unit: 'kg',
     })
   })
+
+  it('routes English and Kiswahili market price questions to the local price tools', () => {
+    expect(resolveDemoAssistantIntent('where is cement cheapest in Arusha')).toEqual({
+      type: 'price-query',
+      action: 'best',
+      productQuery: 'cement',
+      marketQuery: 'Arusha',
+    })
+    expect(resolveDemoAssistantIntent('bei ya nyanya Kilombero')).toEqual({
+      type: 'price-query',
+      action: 'compare',
+      productQuery: 'nyanya',
+      marketQuery: 'Kilombero',
+    })
+  })
+
+  it('prepares price alerts as confirmable local changes', () => {
+    expect(resolveDemoAssistantIntent('alert me when tomatoes are below 1,500')).toEqual({
+      type: 'price-query',
+      action: 'alert',
+      productQuery: 'tomatoes',
+      targetPrice: 1500,
+    })
+  })
 })

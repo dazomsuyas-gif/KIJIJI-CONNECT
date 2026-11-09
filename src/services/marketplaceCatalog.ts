@@ -55,7 +55,7 @@ const categoryDefaults: Record<string, {
     minimumWholesaleQty: 25,
     unit: 'kg',
     audience: ['B2B', 'B2C'],
-    image: '/fresh-produce.jpg',
+    image: '/images/fresh-produce-960.webp',
   },
   'Food & beverages': {
     description: 'Illustrative food product listing. Ingredients, packaging and availability require seller confirmation.',
@@ -63,7 +63,7 @@ const categoryDefaults: Record<string, {
     minimumWholesaleQty: 20,
     unit: 'pack',
     audience: ['B2B', 'B2C'],
-    image: '/fresh-produce.jpg',
+    image: '/images/fresh-produce-960.webp',
   },
   'Construction materials': {
     description: 'Illustrative construction supply listing. Confirm specifications, delivery and current price with the seller.',

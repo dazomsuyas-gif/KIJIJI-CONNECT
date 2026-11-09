@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>/</loc></url>
   <url><loc>/marketplace</loc></url>
+  <url><loc>/prices</loc></url>
   <url><loc>/learning</loc></url>
   <url><loc>/travel</loc></url>
   <url><loc>/community</loc></url>

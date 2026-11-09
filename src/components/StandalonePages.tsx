@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useState, type FormEvent, type ReactNode } from 'react'
 import type { Product } from '../services/marketplaceCatalog'
 import type { AssistantAuditEntry } from '../services/demoAssistant'
 import { businessContact } from '../config/contact'
@@ -7,37 +7,12 @@ import { localDemoSellerId, type LocalProductUpdate } from '../services/localMar
 import { moderationStatusFor, type DemoRole, type ModerationRecord, type ModerationStatus } from '../services/demoModeration'
 import { arushaDeliveryPlaces, deliveryStatusIndex, deliveryStatusLabel, type DeliveryStatus } from '../services/deliveryTracking'
 import { Stepper } from './ui'
+import { matchPriceProduct } from '../services/priceCatalog'
+import { getResponsivePhoto } from '../services/imageAssets'
 
-function ArushaDeliveryMap({ selectedPlace }: { selectedPlace: string }) {
-  const minLatitude = -3.44
-  const maxLatitude = -3.32
-  const minLongitude = 36.57
-  const maxLongitude = 36.88
-  const xFor = (longitude: number) => 8 + ((longitude - minLongitude) / (maxLongitude - minLongitude)) * 84
-  const yFor = (latitude: number) => 92 - ((latitude - minLatitude) / (maxLatitude - minLatitude)) * 84
-
-  return (
-    <div className="arusha-map" role="img" aria-label="Arusha delivery destination map">
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <path className="arusha-map__road" d="M5 72 C28 54 35 62 52 43 S76 23 96 10" />
-        <path className="arusha-map__road arusha-map__road--secondary" d="M8 16 C25 30 33 46 46 55 S74 66 94 91" />
-        {arushaDeliveryPlaces.map((place) => {
-          const selected = place.name === selectedPlace
-          return (
-            <g key={place.id} transform={`translate(${xFor(place.longitude)} ${yFor(place.latitude)})`}>
-              <circle className={selected ? 'arusha-map__marker arusha-map__marker--selected' : 'arusha-map__marker'} r={selected ? 2.8 : 1.8} />
-              <title>{`${place.name} · ${place.latitude}, ${place.longitude}`}</title>
-            </g>
-          )
-        })}
-      </svg>
-      <div className="arusha-map__labels">
-        <strong>Arusha delivery destination</strong>
-        <span>{selectedPlace} is selected. Points show supported local delivery areas.</span>
-      </div>
-    </div>
-  )
-}
+const ArushaDeliveryMap = lazy(() =>
+  import('./ArushaDeliveryMap').then((module) => ({ default: module.ArushaDeliveryMap })),
+)
 
 export type StandalonePageId =
   | 'product-detail'
@@ -111,7 +86,7 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <article className="product-card standalone-product-card">
       <Link to={`/products/${product.id}`} className="standalone-product-image">
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img {...getResponsivePhoto(product.image)} alt={`${product.name}; representative sample listing image`} loading="lazy" />
       </Link>
       <div className="product-body">
         <span className="badge badge--gold">Sample listing</span>
@@ -142,9 +117,9 @@ function ProductDetail({ product, products, onAddToCart }: {
       <PageSection title={product.name} eyebrow="Sample listing · indicative price">
         <div className="standalone-product-detail">
           <div className="product-gallery">
-            <img className="standalone-detail-image" src={gallery[visibleImageIndex]} alt={`${product.name} image ${visibleImageIndex + 1} of ${gallery.length}`} />
+            <img className="standalone-detail-image" {...getResponsivePhoto(gallery[visibleImageIndex])} alt={`${product.name} image ${visibleImageIndex + 1} of ${gallery.length}`} />
             {gallery.length > 1 && <div className="product-gallery-thumbnails" role="group" aria-label="Product image gallery">
-              {gallery.map((image, index) => <button key={`${image}-${index}`} type="button" className={index === visibleImageIndex ? 'product-gallery-thumbnail is-selected' : 'product-gallery-thumbnail'} aria-label={`View image ${index + 1} of ${gallery.length}`} aria-pressed={index === visibleImageIndex} onClick={() => setSelectedImageIndex(index)}><img src={image} alt="" /></button>)}
+              {gallery.map((image, index) => <button key={`${image}-${index}`} type="button" className={index === visibleImageIndex ? 'product-gallery-thumbnail is-selected' : 'product-gallery-thumbnail'} aria-label={`View image ${index + 1} of ${gallery.length}`} aria-pressed={index === visibleImageIndex} onClick={() => setSelectedImageIndex(index)}><img {...getResponsivePhoto(image)} alt="" /></button>)}
             </div>}
           </div>
           <div className="standalone-detail-copy">
@@ -159,6 +134,7 @@ function ProductDetail({ product, products, onAddToCart }: {
               <div><dt>Buyer types</dt><dd>{product.audience.join(' / ')}</dd></div>
             </dl>
             <Link to={supplierPath}>View sample supplier profile</Link>
+            {matchPriceProduct(product.name) && <Link className="price-compare-link" to={`/prices?product=${matchPriceProduct(product.name)?.id}`}>Compare with Arusha market prices</Link>}
             <div className="standalone-actions">
               <button className="primary-button" type="button" onClick={() => onAddToCart(product)}>Add to local demo cart</button>
               <a className="secondary-button" href={`${businessContact.whatsappUrl}?text=${encodeURIComponent(`Hello, I would like to request a quote for ${product.name}. Please confirm the current price and availability. This is an enquiry, not an order.`)}`} target="_blank" rel="noreferrer">Request quote on WhatsApp</a>
@@ -345,7 +321,7 @@ export function StandalonePages(props: StandalonePagesProps) {
                   </div>
                   {demoRole !== 'viewer' && deliveryStatus !== 'delivered' && <button type="button" className="secondary-button" onClick={() => onUpdateOrderDelivery(order.id, deliveryStatus === 'pending-sender' ? 'accepted' : 'sent')}>{deliveryStatus === 'pending-sender' ? 'Accept order as sender' : 'Mark sent by sender'}</button>}
                   {deliveryStatus === 'sent' && <button type="button" className="primary-button" onClick={() => onUpdateOrderDelivery(order.id, 'delivered')}>Confirm delivery received</button>}
-                  <div className="gps-tracking-card"><strong>Delivery destination</strong><span>{deliveryStatus === 'sent' || deliveryStatus === 'delivered' ? 'Dispatch recorded. This is a destination map, not live driver GPS.' : 'Live driver tracking activates only after a connected courier provider dispatches the order.'}</span><ArushaDeliveryMap selectedPlace={place} /><div className="gps-grid">{arushaDeliveryPlaces.map((deliveryPlace) => <span className={deliveryPlace.name === place ? 'gps-point selected' : 'gps-point'} key={deliveryPlace.id} title={`${deliveryPlace.latitude}, ${deliveryPlace.longitude}`}>{deliveryPlace.name}</span>)}</div></div>
+                  <div className="gps-tracking-card"><strong>Delivery destination</strong><span>{deliveryStatus === 'sent' || deliveryStatus === 'delivered' ? 'Dispatch recorded. This is a destination map, not live driver GPS.' : 'Live driver tracking activates only after a connected courier provider dispatches the order.'}</span><Suspense fallback={<p className="loading-state">Loading Arusha destination map…</p>}><ArushaDeliveryMap selectedPlace={place} /></Suspense><div className="gps-grid">{arushaDeliveryPlaces.map((deliveryPlace) => <span className={deliveryPlace.name === place ? 'gps-point selected' : 'gps-point'} key={deliveryPlace.id} title={`${deliveryPlace.latitude}, ${deliveryPlace.longitude}`}>{deliveryPlace.name} ({deliveryPlace.latitude}, {deliveryPlace.longitude})</span>)}</div></div>
                 </>
               )
             })()}
